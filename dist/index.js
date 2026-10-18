@@ -1,8 +1,8 @@
-var oe = Object.defineProperty;
-var re = (u, e, i) => e in u ? oe(u, e, { enumerable: !0, configurable: !0, writable: !0, value: i }) : u[e] = i;
-var v = (u, e, i) => re(u, typeof e != "symbol" ? e + "" : e, i);
-import { jsx as se } from "react/jsx-runtime";
-import { useRef as z, useState as ae, isValidElement as j, version as ue, useCallback as le, useEffect as $, cloneElement as fe } from "react";
+var ne = Object.defineProperty;
+var oe = (a, e, t) => e in a ? ne(a, e, { enumerable: !0, configurable: !0, writable: !0, value: t }) : a[e] = t;
+var m = (a, e, t) => oe(a, typeof e != "symbol" ? e + "" : e, t);
+import { jsx as re } from "react/jsx-runtime";
+import { useRef as H, useState as se, isValidElement as Y, version as ae, useCallback as le, useEffect as $, cloneElement as ue } from "react";
 const ce = `#version 300 es
 precision highp float;
 out vec2 v_uv;
@@ -10,7 +10,7 @@ void main() {
   vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
   v_uv = p;
   gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
-}`, he = (u, e = !1) => `#version 300 es
+}`, fe = (a, e = !1) => `#version 300 es
 precision highp float;
 in vec2 v_uv;
 out vec4 outColor;
@@ -52,7 +52,7 @@ float noise(vec2 p) {
     mix(hash(i + vec2(0, 1)), hash(i + 1.0), u.x), u.y);
 }
 float distanceAt(vec2 uv) { return (texture(u_mask, uv).g - 0.5) * 2.0 * u_distanceRange; }
-${u}
+${a}
 void main() {
   float alpha = texture(u_mask, v_uv).r;
   ${e ? "" : "if (alpha < 0.005) { outColor = vec4(0.0); return; }"}
@@ -69,9 +69,26 @@ void main() {
   Surface s = Surface(v_uv, vec2(v_uv.x, 1.0 - v_uv.y) * u_cssSize / u_fontSize * u_textureScale + vec2(u_seed * 3.17, u_seed * 1.91), normal, depth, u_time);
   ${e ? "vec4 result = material(s); alpha = clamp(result.a, 0.0, 1.0); vec3 col = max(result.rgb, vec3(0.0));" : "vec3 col = max(material(s), vec3(0.0));"}
   outColor = vec4(col * alpha, alpha);
-}`, Q = {
-  id: "puff",
-  label: "Puff",
+}`, p = {
+  id: "resin",
+  label: "Resin",
+  defaults: {
+    puffiness: 0.5,
+    baseColor: "#111111",
+    shadowColor: "#000000",
+    bounceShadowColor: "#000000",
+    highlightColor: "#ffffff",
+    cornerRoundness: 0,
+    radius: 0.1,
+    smoothing: 0.022,
+    lightX: -0.65,
+    lightY: 0.85,
+    lightZ: 0.85,
+    highlightSize: 22,
+    glossStrength: 0.16,
+    ambient: 0.4,
+    bounceStrength: 0
+  },
   fragment: `
 // Filter the outline as well as the normals so raster steps don't become seams.
 float puffDistance(vec2 uv) {
@@ -194,185 +211,182 @@ vec4 material(Surface s) {
   col += u_puffHighlightColor * gloss;
   return vec4(col, alpha);
 }`
-}, ye = { puff: Q }, de = {
-  cornerRoundness: 0,
-  expansion: 0.065,
-  radius: 0.1,
-  normalSmoothing: 0.022,
-  grainStrength: 0.055,
-  keyLightX: -0.65,
-  keyLightY: 0.85,
-  keyLightZ: 0.85,
-  highlightSize: 22,
-  rimStrength: 0.55,
-  glossStrength: 0.16,
-  ambient: 0.4,
-  secondaryShadowStrength: 0
-};
-class pe {
-  constructor(e, i, o, s) {
-    v(this, "gl");
-    v(this, "program", null);
-    v(this, "texture");
-    v(this, "uniforms", /* @__PURE__ */ new Map());
-    v(this, "mask", null);
-    v(this, "frame", 0);
-    v(this, "elapsed", 0);
-    v(this, "last", 0);
-    v(this, "visible", !0);
-    v(this, "options");
-    v(this, "reduced");
-    v(this, "disposed", !1);
-    v(this, "observer");
-    v(this, "tick", (e) => {
+}, Se = { resin: p }, j = (a) => ({
+  puffiness: a.puffiness ?? p.defaults.puffiness,
+  baseColor: a.baseColor ?? p.defaults.baseColor,
+  shadowColor: a.shadowColor ?? p.defaults.shadowColor,
+  bounceShadowColor: a.bounceShadowColor ?? p.defaults.bounceShadowColor,
+  highlightColor: a.highlightColor ?? p.defaults.highlightColor,
+  cornerRoundness: a.cornerRoundness ?? p.defaults.cornerRoundness,
+  radius: a.radius ?? p.defaults.radius,
+  smoothing: a.smoothing ?? p.defaults.smoothing,
+  lightX: a.lightX ?? p.defaults.lightX,
+  lightY: a.lightY ?? p.defaults.lightY,
+  lightZ: a.lightZ ?? p.defaults.lightZ,
+  highlightSize: a.highlightSize ?? p.defaults.highlightSize,
+  glossStrength: a.glossStrength ?? p.defaults.glossStrength,
+  ambient: a.ambient ?? p.defaults.ambient,
+  bounceStrength: a.bounceStrength ?? p.defaults.bounceStrength
+});
+class he {
+  constructor(e, t, i, o) {
+    m(this, "gl");
+    m(this, "program", null);
+    m(this, "texture");
+    m(this, "uniforms", /* @__PURE__ */ new Map());
+    m(this, "mask", null);
+    m(this, "frame", 0);
+    m(this, "elapsed", 0);
+    m(this, "last", 0);
+    m(this, "visible", !0);
+    m(this, "options");
+    m(this, "reduced");
+    m(this, "disposed", !1);
+    m(this, "observer");
+    m(this, "tick", (e) => {
       if (this.frame = 0, this.disposed || !this.visible || document.hidden) {
         this.last = 0;
         return;
       }
-      const i = this.last ? Math.min((e - this.last) / 1e3, 0.05) : 0;
+      const t = this.last ? Math.min((e - this.last) / 1e3, 0.05) : 0;
       this.last = e;
-      const o = !this.reduced.matches && this.options.animated && this.options.time === void 0 && this.options.speed > 0;
-      o && (this.elapsed += i * this.options.speed);
+      const i = !this.reduced.matches;
+      i && (this.elapsed += t);
       try {
         this.draw();
-      } catch (s) {
-        this.fail(s);
+      } catch (o) {
+        this.fail(o);
         return;
       }
-      o ? this.frame = requestAnimationFrame(this.tick) : this.last = 0;
+      i ? this.frame = requestAnimationFrame(this.tick) : this.last = 0;
     });
-    v(this, "wake", () => {
+    m(this, "wake", () => {
       this.disposed || (!this.visible || document.hidden ? (cancelAnimationFrame(this.frame), this.frame = 0, this.last = 0) : this.frame || (this.frame = requestAnimationFrame(this.tick)));
     });
-    this.canvas = e, this.host = i, this.fail = s;
-    const t = e.getContext("webgl2", { alpha: !0, antialias: !1, premultipliedAlpha: !0, depth: !1, stencil: !1 });
-    if (!t) throw new Error("WebGL2 is unavailable.");
-    this.gl = t;
-    const r = t.createTexture();
+    this.canvas = e, this.host = t, this.fail = o;
+    const n = e.getContext("webgl2", { alpha: !0, antialias: !1, premultipliedAlpha: !0, depth: !1, stencil: !1 });
+    if (!n) throw new Error("WebGL2 is unavailable.");
+    this.gl = n;
+    const r = n.createTexture();
     if (!r) throw new Error("Unable to allocate a text texture.");
-    this.texture = r, this.options = o, t.bindTexture(t.TEXTURE_2D, r), t.texParameteri(t.TEXTURE_2D, t.TEXTURE_MIN_FILTER, t.LINEAR), t.texParameteri(t.TEXTURE_2D, t.TEXTURE_MAG_FILTER, t.LINEAR), t.texParameteri(t.TEXTURE_2D, t.TEXTURE_WRAP_S, t.CLAMP_TO_EDGE), t.texParameteri(t.TEXTURE_2D, t.TEXTURE_WRAP_T, t.CLAMP_TO_EDGE), this.reduced = matchMedia("(prefers-reduced-motion: reduce)"), this.reduced.addEventListener("change", this.wake), document.addEventListener("visibilitychange", this.wake), this.observer = new IntersectionObserver((a) => {
-      this.visible = a[0].isIntersecting, this.wake();
+    this.texture = r, this.options = j(i), n.bindTexture(n.TEXTURE_2D, r), n.texParameteri(n.TEXTURE_2D, n.TEXTURE_MIN_FILTER, n.LINEAR), n.texParameteri(n.TEXTURE_2D, n.TEXTURE_MAG_FILTER, n.LINEAR), n.texParameteri(n.TEXTURE_2D, n.TEXTURE_WRAP_S, n.CLAMP_TO_EDGE), n.texParameteri(n.TEXTURE_2D, n.TEXTURE_WRAP_T, n.CLAMP_TO_EDGE), this.reduced = matchMedia("(prefers-reduced-motion: reduce)"), this.reduced.addEventListener("change", this.wake), document.addEventListener("visibilitychange", this.wake), this.observer = new IntersectionObserver((l) => {
+      this.visible = l[0].isIntersecting, this.wake();
     }), this.observer.observe(this.host), this.initializeProgram();
   }
   get maxTextureSize() {
     return Math.min(8192, this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE));
   }
   initializeProgram() {
-    const e = he(Q.fragment, !0), i = this.gl, o = (a, l) => {
-      const n = i.createShader(a);
-      if (!n) throw new Error("Unable to allocate a shader.");
-      if (i.shaderSource(n, l), i.compileShader(n), !i.getShaderParameter(n, i.COMPILE_STATUS)) {
-        const h = i.getShaderInfoLog(n);
-        throw i.deleteShader(n), new Error(`Puff shader: ${h}`);
+    const e = fe(p.fragment, !0), t = this.gl, i = (l, c) => {
+      const s = t.createShader(l);
+      if (!s) throw new Error("Unable to allocate a shader.");
+      if (t.shaderSource(s, c), t.compileShader(s), !t.getShaderParameter(s, t.COMPILE_STATUS)) {
+        const h = t.getShaderInfoLog(s);
+        throw t.deleteShader(s), new Error(`Resin shader: ${h}`);
       }
-      return n;
-    }, s = o(i.VERTEX_SHADER, ce);
-    let t = null, r = null;
+      return s;
+    }, o = i(t.VERTEX_SHADER, ce);
+    let n = null, r = null;
     try {
-      if (t = o(i.FRAGMENT_SHADER, e), r = i.createProgram(), !r) throw new Error("Unable to allocate a shader program.");
-      if (i.attachShader(r, s), i.attachShader(r, t), i.linkProgram(r), !i.getProgramParameter(r, i.LINK_STATUS)) throw new Error(i.getProgramInfoLog(r) || "Shader linking failed.");
-    } catch (a) {
-      throw r && i.deleteProgram(r), a;
+      if (n = i(t.FRAGMENT_SHADER, e), r = t.createProgram(), !r) throw new Error("Unable to allocate a shader program.");
+      if (t.attachShader(r, o), t.attachShader(r, n), t.linkProgram(r), !t.getProgramParameter(r, t.LINK_STATUS)) throw new Error(t.getProgramInfoLog(r) || "Shader linking failed.");
+    } catch (l) {
+      throw r && t.deleteProgram(r), l;
     } finally {
-      i.deleteShader(s), t && i.deleteShader(t);
+      t.deleteShader(o), n && t.deleteShader(n);
     }
-    this.program && i.deleteProgram(this.program), this.program = r, this.uniforms.clear(), this.wake();
+    this.program && t.deleteProgram(this.program), this.program = r, this.uniforms.clear(), this.wake();
   }
   setMask(e) {
     this.mask = e;
-    const { canvas: i, gl: o } = this;
-    i.width = e.width, i.height = e.height, Object.assign(i.style, {
+    const { canvas: t, gl: i } = this;
+    t.width = e.width, t.height = e.height, Object.assign(t.style, {
       width: `${e.cssWidth}px`,
       height: `${e.cssHeight}px`,
       left: "0px",
       top: "0px"
     });
-    const s = this.host.getBoundingClientRect(), t = i.getBoundingClientRect(), r = t.width / e.cssWidth || 1, a = t.height / e.cssHeight || 1;
-    if (i.style.left = `${(s.left + e.left * e.scaleX - t.left) / r}px`, i.style.top = `${(s.top + e.top * e.scaleY - t.top) / a}px`, o.bindTexture(o.TEXTURE_2D, this.texture), o.texImage2D(o.TEXTURE_2D, 0, o.RGBA, e.width, e.height, 0, o.RGBA, o.UNSIGNED_BYTE, e.pixels), o.getError() !== o.NO_ERROR) throw new Error("Unable to upload the text mask.");
+    const o = this.host.getBoundingClientRect(), n = t.getBoundingClientRect(), r = n.width / e.cssWidth || 1, l = n.height / e.cssHeight || 1;
+    if (t.style.left = `${(o.left + e.left * e.scaleX - n.left) / r}px`, t.style.top = `${(o.top + e.top * e.scaleY - n.top) / l}px`, i.bindTexture(i.TEXTURE_2D, this.texture), i.texImage2D(i.TEXTURE_2D, 0, i.RGBA, e.width, e.height, 0, i.RGBA, i.UNSIGNED_BYTE, e.pixels), i.getError() !== i.NO_ERROR) throw new Error("Unable to upload the text mask.");
     this.draw(), this.wake();
   }
   setOptions(e) {
-    this.options = e, this.wake();
+    this.options = j(e), this.wake();
   }
   location(e) {
     return this.uniforms.has(e) || this.uniforms.set(e, this.gl.getUniformLocation(this.program, e)), this.uniforms.get(e);
   }
   draw() {
     if (!this.program || !this.mask || this.disposed || this.gl.isContextLost()) return;
-    const { gl: e, mask: i, options: o } = this;
-    e.viewport(0, 0, i.width, i.height), e.useProgram(this.program), e.activeTexture(e.TEXTURE0), e.bindTexture(e.TEXTURE_2D, this.texture), e.uniform1i(this.location("u_mask"), 0), e.uniform2f(this.location("u_resolution"), i.width, i.height), e.uniform2f(this.location("u_cssSize"), i.cssWidth, i.cssHeight), e.uniform1f(this.location("u_fontSize"), i.fontSize), e.uniform1f(this.location("u_distanceRange"), i.distanceRange), e.uniform1f(this.location("u_time"), o.time ?? (this.reduced.matches ? 0 : this.elapsed)), e.uniform1f(this.location("u_intensity"), o.intensity), e.uniform1f(this.location("u_textureScale"), o.textureScale), e.uniform1f(this.location("u_seed"), o.seed);
-    const s = o.puffiness ?? 0.5;
-    e.uniform1f(this.location("u_puffiness"), Number.isFinite(s) ? Math.max(0, Math.min(1, s)) : 0.5);
-    const t = Number.parseInt((o.puffColor ?? "#111111").slice(1), 16);
-    e.uniform3f(this.location("u_puffColor"), (t >> 16 & 255) / 255, (t >> 8 & 255) / 255, (t & 255) / 255);
-    const r = Number.parseInt((o.shadowColor ?? "#000000").slice(1), 16);
-    e.uniform3f(this.location("u_puffShadowColor"), (r >> 16 & 255) / 255, (r >> 8 & 255) / 255, (r & 255) / 255);
-    const a = Number.parseInt((o.secondaryShadowColor ?? "#000000").slice(1), 16);
-    e.uniform3f(this.location("u_puffSecondaryShadowColor"), (a >> 16 & 255) / 255, (a >> 8 & 255) / 255, (a & 255) / 255);
-    const l = Number.parseInt((o.highlightColor ?? "#ffffff").slice(1), 16);
-    e.uniform3f(this.location("u_puffHighlightColor"), (l >> 16 & 255) / 255, (l >> 8 & 255) / 255, (l & 255) / 255);
-    const n = {
-      ...de,
-      ...Object.fromEntries(Object.entries(o.puffSettings ?? {}).filter(([, h]) => h !== void 0))
-    };
-    e.uniform1f(this.location("u_puffCornerRoundness"), Math.max(0, Math.min(1, n.cornerRoundness))), e.uniform1f(this.location("u_puffExpansion"), n.expansion), e.uniform1f(this.location("u_puffRadius"), n.radius), e.uniform1f(this.location("u_puffNormalSmoothing"), n.normalSmoothing), e.uniform1f(this.location("u_puffGrainStrength"), n.grainStrength), e.uniform3f(this.location("u_puffKeyLight"), n.keyLightX, n.keyLightY, n.keyLightZ), e.uniform1f(this.location("u_puffHighlightSize"), n.highlightSize), e.uniform1f(this.location("u_puffRimStrength"), n.rimStrength), e.uniform1f(this.location("u_puffGlossStrength"), n.glossStrength), e.uniform1f(this.location("u_puffAmbient"), n.ambient), e.uniform1f(this.location("u_puffSecondaryShadowStrength"), Math.max(0, Math.min(1, n.secondaryShadowStrength))), e.drawArrays(e.TRIANGLES, 0, 3);
+    const { gl: e, mask: t, options: i } = this;
+    e.viewport(0, 0, t.width, t.height), e.useProgram(this.program), e.activeTexture(e.TEXTURE0), e.bindTexture(e.TEXTURE_2D, this.texture), e.uniform1i(this.location("u_mask"), 0), e.uniform2f(this.location("u_resolution"), t.width, t.height), e.uniform2f(this.location("u_cssSize"), t.cssWidth, t.cssHeight), e.uniform1f(this.location("u_fontSize"), t.fontSize), e.uniform1f(this.location("u_distanceRange"), t.distanceRange);
+    const o = i.puffiness, n = Number.isFinite(o) ? Math.max(0, Math.min(1, o)) : 0.5, r = Math.min(1, n * 7 / 3), l = r > 0 ? n * 0.035 / r : 0.015;
+    e.uniform1f(this.location("u_puffiness"), r);
+    const c = Number.parseInt(i.baseColor.slice(1), 16);
+    e.uniform3f(this.location("u_puffColor"), (c >> 16 & 255) / 255, (c >> 8 & 255) / 255, (c & 255) / 255);
+    const s = Number.parseInt(i.shadowColor.slice(1), 16);
+    e.uniform3f(this.location("u_puffShadowColor"), (s >> 16 & 255) / 255, (s >> 8 & 255) / 255, (s & 255) / 255);
+    const h = Number.parseInt(i.bounceShadowColor.slice(1), 16);
+    e.uniform3f(this.location("u_puffSecondaryShadowColor"), (h >> 16 & 255) / 255, (h >> 8 & 255) / 255, (h & 255) / 255);
+    const d = Number.parseInt(i.highlightColor.slice(1), 16);
+    e.uniform3f(this.location("u_puffHighlightColor"), (d >> 16 & 255) / 255, (d >> 8 & 255) / 255, (d & 255) / 255), e.uniform1f(this.location("u_puffCornerRoundness"), Math.max(0, Math.min(1, i.cornerRoundness))), e.uniform1f(this.location("u_puffExpansion"), l), e.uniform1f(this.location("u_puffRadius"), i.radius), e.uniform1f(this.location("u_puffNormalSmoothing"), i.smoothing), e.uniform1f(this.location("u_puffGrainStrength"), 0), e.uniform3f(this.location("u_puffKeyLight"), i.lightX, i.lightY, i.lightZ), e.uniform1f(this.location("u_puffHighlightSize"), i.highlightSize), e.uniform1f(this.location("u_puffRimStrength"), 0), e.uniform1f(this.location("u_puffGlossStrength"), i.glossStrength), e.uniform1f(this.location("u_puffAmbient"), i.ambient), e.uniform1f(this.location("u_puffSecondaryShadowStrength"), Math.max(0, Math.min(1, i.bounceStrength))), e.drawArrays(e.TRIANGLES, 0, 3);
   }
   dispose() {
     this.disposed = !0, cancelAnimationFrame(this.frame), this.observer.disconnect(), this.reduced.removeEventListener("change", this.wake), document.removeEventListener("visibilitychange", this.wake), this.gl.deleteTexture(this.texture), this.program && this.gl.deleteProgram(this.program);
   }
 }
-function Y(u, e, i, o, s) {
-  let t = 0;
-  o[0] = 0, s[0] = -1 / 0, s[1] = 1 / 0;
-  for (let r = 1; r < i; r++) {
-    let a = (u[r] + r * r - (u[o[t]] + o[t] * o[t])) / (2 * r - 2 * o[t]);
-    for (; a <= s[t]; )
-      t--, a = (u[r] + r * r - (u[o[t]] + o[t] * o[t])) / (2 * r - 2 * o[t]);
-    t++, o[t] = r, s[t] = a, s[t + 1] = 1 / 0;
+function Z(a, e, t, i, o) {
+  let n = 0;
+  i[0] = 0, o[0] = -1 / 0, o[1] = 1 / 0;
+  for (let r = 1; r < t; r++) {
+    let l = (a[r] + r * r - (a[i[n]] + i[n] * i[n])) / (2 * r - 2 * i[n]);
+    for (; l <= o[n]; )
+      n--, l = (a[r] + r * r - (a[i[n]] + i[n] * i[n])) / (2 * r - 2 * i[n]);
+    n++, i[n] = r, o[n] = l, o[n + 1] = 1 / 0;
   }
-  t = 0;
-  for (let r = 0; r < i; r++) {
-    for (; s[t + 1] < r; ) t++;
-    e[r] = (r - o[t]) ** 2 + u[o[t]];
-  }
-}
-function Z(u, e, i) {
-  const o = Math.max(e, i), s = new Float64Array(o), t = new Float64Array(o), r = new Int32Array(o), a = new Float64Array(o + 1);
-  for (let l = 0; l < e; l++) {
-    for (let n = 0; n < i; n++) s[n] = u[n * e + l];
-    Y(s, t, i, r, a);
-    for (let n = 0; n < i; n++) u[n * e + l] = t[n];
-  }
-  for (let l = 0; l < i; l++) {
-    for (let n = 0; n < e; n++) s[n] = u[l * e + n];
-    Y(s, t, e, r, a);
-    for (let n = 0; n < e; n++) u[l * e + n] = t[n];
+  n = 0;
+  for (let r = 0; r < t; r++) {
+    for (; o[n + 1] < r; ) n++;
+    e[r] = (r - i[n]) ** 2 + a[i[n]];
   }
 }
-function ge(u, e, i) {
-  const { width: o, height: s, data: t } = u, r = new Float64Array(o * s), a = new Float64Array(o * s);
-  for (let n = 0; n < o * s; n++) {
-    const h = t[n * 4 + 3] / 255;
+function J(a, e, t) {
+  const i = Math.max(e, t), o = new Float64Array(i), n = new Float64Array(i), r = new Int32Array(i), l = new Float64Array(i + 1);
+  for (let c = 0; c < e; c++) {
+    for (let s = 0; s < t; s++) o[s] = a[s * e + c];
+    Z(o, n, t, r, l);
+    for (let s = 0; s < t; s++) a[s * e + c] = n[s];
+  }
+  for (let c = 0; c < t; c++) {
+    for (let s = 0; s < e; s++) o[s] = a[c * e + s];
+    Z(o, n, e, r, l);
+    for (let s = 0; s < e; s++) a[c * e + s] = n[s];
+  }
+}
+function de(a, e, t) {
+  const { width: i, height: o, data: n } = a, r = new Float64Array(i * o), l = new Float64Array(i * o);
+  for (let s = 0; s < i * o; s++) {
+    const h = n[s * 4 + 3] / 255;
     if (h === 1)
-      r[n] = 1e12, a[n] = 0;
+      r[s] = 1e12, l[s] = 0;
     else if (h === 0)
-      r[n] = 0, a[n] = 1e12;
+      r[s] = 0, l[s] = 1e12;
     else {
       const d = h - 0.5;
-      r[n] = Math.max(0, d) ** 2, a[n] = Math.max(0, -d) ** 2;
+      r[s] = Math.max(0, d) ** 2, l[s] = Math.max(0, -d) ** 2;
     }
   }
-  Z(r, o, s), Z(a, o, s);
-  const l = new Uint8Array(o * s * 4);
-  for (let n = 0; n < s; n++) for (let h = 0; h < o; h++) {
-    const d = n * o + h, w = ((s - 1 - n) * o + h) * 4, M = (Math.sqrt(r[d]) - Math.sqrt(a[d])) / e;
-    l[w] = t[d * 4 + 3], l[w + 1] = Math.round(Math.max(0, Math.min(1, 0.5 + M / (2 * i))) * 255), l[w + 3] = 255;
+  J(r, i, o), J(l, i, o);
+  const c = new Uint8Array(i * o * 4);
+  for (let s = 0; s < o; s++) for (let h = 0; h < i; h++) {
+    const d = s * i + h, R = ((o - 1 - s) * i + h) * 4, k = (Math.sqrt(r[d]) - Math.sqrt(l[d])) / e;
+    c[R] = n[d * 4 + 3], c[R + 1] = Math.round(Math.max(0, Math.min(1, 0.5 + k / (2 * t))) * 255), c[R + 3] = 255;
   }
-  return l;
+  return c;
 }
-const O = (u) => Number.parseFloat(u) || 0;
-function J(u) {
-  const e = getComputedStyle(u);
+const W = (a) => Number.parseFloat(a) || 0;
+function Q(a) {
+  const e = getComputedStyle(a);
   return [
     e.font,
     e.fontFamily,
@@ -404,199 +418,188 @@ function J(u) {
     devicePixelRatio
   ].join("|");
 }
-function me(u, e) {
-  var L;
-  const i = getComputedStyle(u), o = Array.from(u.childNodes).filter((g) => g.nodeType === Node.TEXT_NODE);
-  if (!o.length || !((L = u.textContent) != null && L.trim())) return null;
-  const s = o.map((g) => g.textContent).join("");
-  if (o.length !== 1) throw new Error("ShaderText expects one plain text child.");
-  if (i.writingMode !== "horizontal-tb" || i.direction !== "ltr" || /[\u0590-\u08ff\u0900-\u109f\u1780-\u17ff\u200e-\u200f\u202a-\u202e\u2066-\u2069]/u.test(s) || !["normal", "pre-wrap"].includes(i.whiteSpace) || i.textAlign === "justify" || i.textTransform !== "none" || i.fontFeatureSettings !== "normal" || i.fontVariationSettings !== "normal" || i.fontVariant !== "normal" || i.fontStretch !== "100%" && i.fontStretch !== "normal" || i.textDecorationLine !== "none" || i.textShadow !== "none" || i.hyphens === "auto" || s.includes("­") || s.includes("	"))
+function ge(a, e) {
+  var A;
+  const t = getComputedStyle(a), i = Array.from(a.childNodes).filter((y) => y.nodeType === Node.TEXT_NODE);
+  if (!i.length || !((A = a.textContent) != null && A.trim())) return null;
+  const o = i.map((y) => y.textContent).join("");
+  if (i.length !== 1) throw new Error("ShaderText expects one plain text child.");
+  if (t.writingMode !== "horizontal-tb" || t.direction !== "ltr" || /[\u0590-\u08ff\u0900-\u109f\u1780-\u17ff\u200e-\u200f\u202a-\u202e\u2066-\u2069]/u.test(o) || !["normal", "pre-wrap"].includes(t.whiteSpace) || t.textAlign === "justify" || t.textTransform !== "none" || t.fontFeatureSettings !== "normal" || t.fontVariationSettings !== "normal" || t.fontVariant !== "normal" || t.fontStretch !== "100%" && t.fontStretch !== "normal" || t.textDecorationLine !== "none" || t.textShadow !== "none" || t.hyphens === "auto" || o.includes("­") || o.includes("	"))
     throw new Error("This typography is outside the initial ShaderText support; displaying HTML text.");
-  const t = o[0], r = O(i.fontSize), a = u.getBoundingClientRect(), l = u.offsetWidth, n = a.width / (l || a.width || 1), h = a.height / (u.offsetHeight || a.height || 1);
-  if (!a.width || !a.height || !r) return null;
-  const d = document.createRange(), w = [], M = new Intl.Segmenter(void 0, { granularity: "grapheme" });
-  for (const g of M.segment(s)) {
-    const m = g.index, S = m + g.segment.length;
-    d.setStart(t, m), d.setEnd(t, S);
-    const R = d.getBoundingClientRect();
-    if (!R.height || g.segment === `
+  const n = i[0], r = W(t.fontSize), l = a.getBoundingClientRect(), c = a.offsetWidth, s = l.width / (c || l.width || 1), h = l.height / (a.offsetHeight || l.height || 1);
+  if (!l.width || !l.height || !r) return null;
+  const d = document.createRange(), R = [], k = new Intl.Segmenter(void 0, { granularity: "grapheme" });
+  for (const y of k.segment(o)) {
+    const v = y.index, x = v + y.segment.length;
+    d.setStart(n, v), d.setEnd(n, x);
+    const S = d.getBoundingClientRect();
+    if (!S.height || y.segment === `
 `) continue;
-    const _ = w.at(-1);
-    _ && Math.abs(R.top - _.top) < 1 ? _.end = S : w.push({ start: m, end: S, top: R.top });
+    const T = R.at(-1);
+    T && Math.abs(S.top - T.top) < 1 ? T.end = x : R.push({ start: v, end: x, top: S.top });
   }
-  const b = Math.ceil(r * 0.25 + 2), k = a.width / n + b * 2, A = a.height / h + b * 2, x = Math.min(
+  const E = Math.ceil(r * 0.25 + 2), z = l.width / s + E * 2, w = l.height / h + E * 2, _ = Math.min(
     devicePixelRatio || 1,
     2,
-    e / k,
-    e / A,
-    Math.sqrt(3e6 / (k * A))
+    e / z,
+    e / w,
+    Math.sqrt(3e6 / (z * w))
   );
-  if (x < 0.25) throw new Error("Text surface is too large; displaying HTML text.");
-  const y = document.createElement("canvas");
-  y.width = Math.max(1, Math.ceil(k * x)), y.height = Math.max(1, Math.ceil(A * x));
-  const p = y.getContext("2d", { willReadFrequently: !0 });
-  if (!p) throw new Error("Canvas 2D is unavailable.");
-  if (p.scale(x, x), p.font = `${i.fontStyle} ${i.fontWeight} ${i.fontSize} ${i.fontFamily}`, p.textBaseline = "alphabetic", p.fillStyle = "#fff", p.direction = "ltr", p.fontKerning = i.fontKerning, O(i.letterSpacing) && !("letterSpacing" in p)) throw new Error("Canvas letter spacing is unavailable.");
-  if (O(i.wordSpacing) && !("wordSpacing" in p)) throw new Error("Canvas word spacing is unavailable.");
-  p.letterSpacing = i.letterSpacing === "normal" ? "0px" : i.letterSpacing, p.wordSpacing = i.wordSpacing === "normal" ? "0px" : i.wordSpacing;
-  const F = p.measureText("Hg"), c = F.fontBoundingBoxAscent, E = F.fontBoundingBoxDescent;
-  if (!Number.isFinite(c) || !Number.isFinite(E)) throw new Error("Font bounds are unavailable.");
-  for (const g of w) {
-    let { start: m, end: S } = g;
-    if (i.whiteSpace === "normal") {
-      for (; m < S && /\s/.test(s[m]); ) m++;
-      for (; S > m && /\s/.test(s[S - 1]); ) S--;
+  if (_ < 0.25) throw new Error("Text surface is too large; displaying HTML text.");
+  const C = document.createElement("canvas");
+  C.width = Math.max(1, Math.ceil(z * _)), C.height = Math.max(1, Math.ceil(w * _));
+  const g = C.getContext("2d", { willReadFrequently: !0 });
+  if (!g) throw new Error("Canvas 2D is unavailable.");
+  if (g.scale(_, _), g.font = `${t.fontStyle} ${t.fontWeight} ${t.fontSize} ${t.fontFamily}`, g.textBaseline = "alphabetic", g.fillStyle = "#fff", g.direction = "ltr", g.fontKerning = t.fontKerning, W(t.letterSpacing) && !("letterSpacing" in g)) throw new Error("Canvas letter spacing is unavailable.");
+  if (W(t.wordSpacing) && !("wordSpacing" in g)) throw new Error("Canvas word spacing is unavailable.");
+  g.letterSpacing = t.letterSpacing === "normal" ? "0px" : t.letterSpacing, g.wordSpacing = t.wordSpacing === "normal" ? "0px" : t.wordSpacing;
+  const f = g.measureText("Hg"), b = f.fontBoundingBoxAscent, M = f.fontBoundingBoxDescent;
+  if (!Number.isFinite(b) || !Number.isFinite(M)) throw new Error("Font bounds are unavailable.");
+  for (const y of R) {
+    let { start: v, end: x } = y;
+    if (t.whiteSpace === "normal") {
+      for (; v < x && /\s/.test(o[v]); ) v++;
+      for (; x > v && /\s/.test(o[x - 1]); ) x--;
     }
-    if (m === S) continue;
-    d.setStart(t, m), d.setEnd(t, S);
-    const R = d.getBoundingClientRect(), _ = i.whiteSpace === "normal" ? s.slice(m, S).replace(/\s+/g, " ") : s.slice(m, S), P = (R.left - a.left) / n + b, U = R.height / h, D = (R.top - a.top) / h + (U - c - E) / 2 + c + b;
-    p.fillText(_, P, D);
+    if (v === x) continue;
+    d.setStart(n, v), d.setEnd(n, x);
+    const S = d.getBoundingClientRect(), T = t.whiteSpace === "normal" ? o.slice(v, x).replace(/\s+/g, " ") : o.slice(v, x), P = (S.left - l.left) / s + E, I = S.height / h, U = (S.top - l.top) / h + (I - b - M) / 2 + b + E;
+    g.fillText(T, P, U);
   }
-  const C = Math.max(8, r * 0.12);
+  const L = Math.max(8, r * 0.12);
   return {
-    pixels: ge(p.getImageData(0, 0, y.width, y.height), x, C),
-    width: y.width,
-    height: y.height,
-    cssWidth: k,
-    cssHeight: A,
+    pixels: de(g.getImageData(0, 0, C.width, C.height), _, L),
+    width: C.width,
+    height: C.height,
+    cssWidth: z,
+    cssHeight: w,
     // Canvas placement is anchored to the host's border-box rectangle. The
     // renderer translates that viewport-space target into the canvas's actual
     // absolute-positioning context, which may differ for fragmented inlines.
-    left: -b,
-    top: -b,
-    scaleX: n,
+    left: -E,
+    top: -E,
+    scaleX: s,
     scaleY: h,
     fontSize: r,
-    distanceRange: C
+    distanceRange: L
   };
 }
-const I = (u, e, i, o) => Number.isFinite(u) ? Math.max(i, Math.min(o, u)) : e;
-function _e(u) {
-  var F;
-  const { children: e, shader: i = "puff", animated: o = !0, onError: s, ...t } = u, r = z(null), a = z(null), l = z(null), n = z(null), [h, d] = ae(!1), w = z({ onError: s });
-  w.current = { onError: s };
-  const M = {
-    animated: o,
-    speed: I(t.speed ?? 0.6, 0.6, 0, 5),
-    intensity: I(t.intensity ?? 0.8, 0.8, 0, 2),
-    textureScale: I(t.textureScale ?? 1, 1, 0.1, 6),
-    seed: I(t.seed ?? 1, 1, -1e4, 1e4),
-    puffiness: I(t.puffiness ?? 0.5, 0.5, 0, 1),
-    puffColor: /^#[0-9a-f]{6}$/i.test(t.puffColor ?? "") ? t.puffColor : "#111111",
-    shadowColor: /^#[0-9a-f]{6}$/i.test(t.shadowColor ?? "") ? t.shadowColor : "#000000",
-    secondaryShadowColor: /^#[0-9a-f]{6}$/i.test(t.secondaryShadowColor ?? "") ? t.secondaryShadowColor : "#000000",
-    highlightColor: /^#[0-9a-f]{6}$/i.test(t.highlightColor ?? "") ? t.highlightColor : "#ffffff",
-    puffSettings: {
-      cornerRoundness: t.cornerRoundness,
-      expansion: t.expansion,
-      radius: t.radius,
-      normalSmoothing: t.normalSmoothing,
-      grainStrength: t.grainStrength,
-      keyLightX: t.keyLightX,
-      keyLightY: t.keyLightY,
-      keyLightZ: t.keyLightZ,
-      highlightSize: t.highlightSize,
-      rimStrength: t.rimStrength,
-      glossStrength: t.glossStrength,
-      ambient: t.ambient,
-      secondaryShadowStrength: t.secondaryShadowStrength
-    },
-    time: t.time === void 0 ? void 0 : I(t.time, 0, 0, 1e7)
-  }, b = z(M);
-  b.current = M;
-  const k = j(e) && typeof e.type == "string" && /^(h[1-6]|p|span)$/.test(e.type), A = k && (typeof e.props.children == "string" || typeof e.props.children == "number"), x = j(e) ? Number.parseInt(ue) >= 19 ? e.props.ref : e.ref : void 0, y = z(void 0), p = le((c) => {
-    r.current = c, y.current ? (y.current(), y.current = void 0) : !c && typeof x == "function" && x(null), c && typeof x == "function" ? y.current = x(c) : x && typeof x != "function" && (x.current = c);
-  }, [x]);
+const pe = (a, e, t, i) => Number.isFinite(a) ? Math.max(t, Math.min(i, a)) : e;
+function we(a) {
+  var g;
+  const { children: e, shader: t = "resin", onError: i, ...o } = a, n = H(null), r = H(null), l = H(null), c = H(null), [s, h] = se(!1), d = H({ onError: i });
+  d.current = { onError: i };
+  const R = {
+    puffiness: pe(o.puffiness ?? 0.5, 0.5, 0, 1),
+    baseColor: /^#[0-9a-f]{6}$/i.test(o.baseColor ?? "") ? o.baseColor : "#111111",
+    shadowColor: /^#[0-9a-f]{6}$/i.test(o.shadowColor ?? "") ? o.shadowColor : "#000000",
+    bounceShadowColor: /^#[0-9a-f]{6}$/i.test(o.bounceShadowColor ?? "") ? o.bounceShadowColor : "#000000",
+    highlightColor: /^#[0-9a-f]{6}$/i.test(o.highlightColor ?? "") ? o.highlightColor : "#ffffff",
+    cornerRoundness: o.cornerRoundness,
+    radius: o.radius,
+    smoothing: o.smoothing,
+    lightX: o.lightX,
+    lightY: o.lightY,
+    lightZ: o.lightZ,
+    highlightSize: o.highlightSize,
+    glossStrength: o.glossStrength,
+    ambient: o.ambient,
+    bounceStrength: o.bounceStrength
+  }, k = H(R);
+  k.current = R;
+  const E = Y(e) && typeof e.type == "string" && /^(h[1-6]|p|span)$/.test(e.type), z = E && (typeof e.props.children == "string" || typeof e.props.children == "number"), w = Y(e) ? Number.parseInt(ae) >= 19 ? e.props.ref : e.ref : void 0, _ = H(void 0), C = le((f) => {
+    n.current = f, _.current ? (_.current(), _.current = void 0) : !f && typeof w == "function" && w(null), f && typeof w == "function" ? _.current = w(f) : w && typeof w != "function" && (w.current = f);
+  }, [w]);
   return $(() => {
-    const c = r.current, E = a.current;
-    if (!c || !E || !A) return;
-    let C = !1, L = 0, g = 0, m = "", S = !1, R = "", _ = !1, P = !1;
-    const U = () => {
-      cancelAnimationFrame(g), g = 0, P = !1, E.style.visibility = "hidden", d(!1);
-    }, D = (f) => {
-      var T, q;
-      C || (U(), (q = (T = w.current).onError) == null || q.call(T, f));
-    }, ee = () => Array.from(c.getClientRects(), (f) => `${f.left},${f.top},${f.width},${f.height}`).join(";"), te = () => {
-      if (L = 0, !(C || !S || !l.current || l.current.gl.isContextLost()))
+    const f = n.current, b = r.current;
+    if (!f || !b || !z) return;
+    let M = !1, L = 0, A = 0, y = "", v = !1, x = "", S = !1, T = !1;
+    const P = () => {
+      cancelAnimationFrame(A), A = 0, T = !1, b.style.visibility = "hidden", h(!1);
+    }, I = (u) => {
+      var D, q;
+      M || (P(), (q = (D = d.current).onError) == null || q.call(D, u));
+    }, U = () => Array.from(f.getClientRects(), (u) => `${u.left},${u.top},${u.width},${u.height}`).join(";"), ee = () => {
+      if (L = 0, !(M || !v || !l.current || l.current.gl.isContextLost()))
         try {
-          m = J(c);
-          const f = m + "|" + ee() + "|" + c.textContent;
-          if (f !== R || !_) {
-            const T = me(c, l.current.maxTextureSize);
-            if (!T) {
-              _ = !1, U();
+          y = Q(f);
+          const u = y + "|" + U() + "|" + f.textContent;
+          if (u !== x || !S) {
+            const D = ge(f, l.current.maxTextureSize);
+            if (!D) {
+              S = !1, P();
               return;
             }
-            l.current.setMask(T), _ = !0, R = f;
+            l.current.setMask(D), S = !0, x = u;
           }
-          !P && !g && (g = requestAnimationFrame(() => {
-            var T;
-            g = 0, !(C || !_ || (T = l.current) != null && T.gl.isContextLost()) && (P = !0, d(!0));
+          !T && !A && (A = requestAnimationFrame(() => {
+            var D;
+            A = 0, !(M || !S || (D = l.current) != null && D.gl.isContextLost()) && (T = !0, h(!0));
           }));
-        } catch (f) {
-          D(f);
+        } catch (u) {
+          I(u);
         }
-    }, H = () => {
-      C || L || (L = requestAnimationFrame(te));
+    }, F = () => {
+      M || L || (L = requestAnimationFrame(ee));
     };
-    n.current = H;
-    const W = () => {
+    c.current = F;
+    const G = () => {
       try {
-        if (i !== "puff") throw new Error("Only the Puff shader is supported.");
-        l.current = new pe(E, c, b.current, D), H();
-      } catch (f) {
-        D(f);
+        if (t !== "resin") throw new Error("Only the Resin shader is supported.");
+        l.current = new he(b, f, k.current, I), F();
+      } catch (u) {
+        I(u);
       }
-    }, G = (f) => {
-      f.preventDefault(), D(new Error("WebGL context lost; displaying HTML text."));
+    }, O = (u) => {
+      u.preventDefault(), I(new Error("WebGL context lost; displaying HTML text."));
     }, V = () => {
-      var f;
-      (f = l.current) == null || f.dispose(), l.current = null, _ = !1, W();
+      var u;
+      (u = l.current) == null || u.dispose(), l.current = null, S = !1, G();
     };
-    E.addEventListener("webglcontextlost", G), E.addEventListener("webglcontextrestored", V), W();
-    const N = new ResizeObserver(H);
-    N.observe(c);
-    const B = new MutationObserver(H), K = getComputedStyle(c).display.startsWith("inline"), ie = K && c.parentElement ? c.parentElement : c;
-    if (B.observe(ie, { characterData: !0, childList: !0, subtree: !0 }), K) {
-      let f = c.parentElement;
-      for (; f != null && f.parentElement && getComputedStyle(f).display.startsWith("inline"); )
-        f = f.parentElement;
-      f && N.observe(f);
+    b.addEventListener("webglcontextlost", O), b.addEventListener("webglcontextrestored", V), G();
+    const X = new ResizeObserver(F);
+    X.observe(f);
+    const B = new MutationObserver(F), K = getComputedStyle(f).display.startsWith("inline"), te = K && f.parentElement ? f.parentElement : f;
+    if (B.observe(te, { characterData: !0, childList: !0, subtree: !0 }), K) {
+      let u = f.parentElement;
+      for (; u != null && u.parentElement && getComputedStyle(u).display.startsWith("inline"); )
+        u = u.parentElement;
+      u && X.observe(u);
     }
-    const X = () => {
-      S = !0, _ = !1, H();
+    const N = () => {
+      v = !0, S = !1, F();
     };
-    document.fonts.ready.then(X), document.fonts.addEventListener("loadingdone", X);
-    const ne = window.setInterval(() => {
-      !document.hidden && J(c) !== m && H();
+    document.fonts.ready.then(N), document.fonts.addEventListener("loadingdone", N);
+    const ie = window.setInterval(() => {
+      !document.hidden && Q(f) !== y && F();
     }, 400);
     return () => {
-      var f;
-      C = !0, cancelAnimationFrame(L), cancelAnimationFrame(g), clearInterval(ne), n.current = null, N.disconnect(), B.disconnect(), document.fonts.removeEventListener("loadingdone", X), E.removeEventListener("webglcontextlost", G), E.removeEventListener("webglcontextrestored", V), (f = l.current) == null || f.dispose(), l.current = null;
+      var u;
+      M = !0, cancelAnimationFrame(L), cancelAnimationFrame(A), clearInterval(ie), c.current = null, X.disconnect(), B.disconnect(), document.fonts.removeEventListener("loadingdone", N), b.removeEventListener("webglcontextlost", O), b.removeEventListener("webglcontextrestored", V), (u = l.current) == null || u.dispose(), l.current = null;
     };
-  }, [A, e.type, i]), $(() => {
-    var c;
-    (c = l.current) == null || c.setOptions(b.current);
+  }, [z, e.type, t]), $(() => {
+    var f;
+    (f = l.current) == null || f.setOptions(k.current);
   }), $(() => {
-    var c;
-    (c = n.current) == null || c.call(n);
-  }, [e.props.children, e.props.className, e.props.style]), !k || !A ? e : fe(
+    var f;
+    (f = c.current) == null || f.call(c);
+  }, [e.props.children, e.props.className, e.props.style]), !E || !z ? e : ue(
     e,
     {
-      ref: p,
-      "data-shader-state": h ? "ready" : "fallback",
+      ref: C,
+      "data-shader-state": s ? "ready" : "fallback",
       style: {
         ...e.props.style,
-        position: (F = e.props.style) != null && F.position && e.props.style.position !== "static" ? e.props.style.position : "relative",
-        ...h ? { WebkitTextFillColor: "transparent" } : {}
+        position: (g = e.props.style) != null && g.position && e.props.style.position !== "static" ? e.props.style.position : "relative",
+        ...s ? { WebkitTextFillColor: "transparent" } : {}
       }
     },
     String(e.props.children),
-    /* @__PURE__ */ se("canvas", { ref: a, "aria-hidden": "true", style: {
+    /* @__PURE__ */ re("canvas", { ref: r, "aria-hidden": "true", style: {
       position: "absolute",
       background: "transparent",
       pointerEvents: "none",
-      visibility: h ? "visible" : "hidden",
+      visibility: s ? "visible" : "hidden",
       display: "block",
       maxWidth: "none",
       userSelect: "none"
@@ -604,7 +607,7 @@ function _e(u) {
   );
 }
 export {
-  _e as TextRender,
-  Q as puff,
-  ye as skins
+  we as TextRender,
+  p as resin,
+  Se as skins
 };

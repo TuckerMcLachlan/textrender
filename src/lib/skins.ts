@@ -1,13 +1,31 @@
-import type { SkinName } from './types';
+import type { OptionsFor, SkinName } from './types';
 
-type PuffSkin = {
-  readonly id: SkinName;
+export type SkinDefinition<S extends SkinName> = {
+  readonly id: S;
   readonly label: string;
   readonly fragment: string;
+  readonly defaults: Required<OptionsFor<S>>;
 };
 
-export const puff: PuffSkin = {
-  id: 'puff', label: 'Puff',
+export const resin = {
+  id: 'resin', label: 'Resin',
+  defaults: {
+    puffiness: 0.5,
+    baseColor: '#111111',
+    shadowColor: '#000000',
+    bounceShadowColor: '#000000',
+    highlightColor: '#ffffff',
+    cornerRoundness: 0,
+    radius: 0.1,
+    smoothing: 0.022,
+    lightX: -0.65,
+    lightY: 0.85,
+    lightZ: 0.85,
+    highlightSize: 22,
+    glossStrength: 0.16,
+    ambient: 0.4,
+    bounceStrength: 0,
+  },
   fragment: `
 // Filter the outline as well as the normals so raster steps don't become seams.
 float puffDistance(vec2 uv) {
@@ -130,6 +148,6 @@ vec4 material(Surface s) {
   col += u_puffHighlightColor * gloss;
   return vec4(col, alpha);
 }`,
-};
+} satisfies SkinDefinition<'resin'>;
 
-export const skins: Readonly<Record<SkinName, PuffSkin>> = { puff };
+export const skins: { readonly [S in SkinName]: SkinDefinition<S> } = { resin };

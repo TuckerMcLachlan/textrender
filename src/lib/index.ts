@@ -1,5 +1,7 @@
 export { TextRender } from './TextRender';
-export { skins, puff } from './skins';
+export { skins, resin } from './skins';
 export type {
-  CommonShaderOptions, PuffOptions, TextRenderProps, SkinName,
+  BaseTextRenderProps, OptionsFor, ResinOptions, ResolvedResinOptions,
+  SkinName, SkinOptions, SkinOptionsMap, SkinProps, TextRenderProps,
 } from './types';
+export type { SkinDefinition } from './skins';

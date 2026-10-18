@@ -2,36 +2,34 @@ import { cloneElement, isValidElement, useCallback, useEffect, useRef, useState,
 import type { Ref } from 'react';
 import { TextRenderer } from './renderer';
 import { createTextMask, typographySignature } from './typography';
-import type { RenderOptions, TextRenderProps } from './types';
+import type { ResinOptions, TextRenderProps } from './types';
 
 const finite = (n: number, fallback: number, min: number, max: number) => Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
 
 export function TextRender(props: TextRenderProps) {
-  const { children, shader = 'puff', animated = true, onError, ...settings } = props;
+  const { children, shader = 'resin', onError, ...settings } = props;
   const hostRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<TextRenderer | null>(null);
   const refreshRef = useRef<(() => void) | null>(null);
   const [ready, setReady] = useState(false);
   const latest = useRef({ onError }); latest.current = { onError };
-  const renderOptions: RenderOptions = {
-    animated,
-    speed: finite(settings.speed ?? 0.6, 0.6, 0, 5),
-    intensity: finite(settings.intensity ?? 0.8, 0.8, 0, 2),
-    textureScale: finite(settings.textureScale ?? 1, 1, 0.1, 6),
-    seed: finite(settings.seed ?? 1, 1, -10000, 10000),
+  const renderOptions: ResinOptions = {
     puffiness: finite(settings.puffiness ?? 0.5, 0.5, 0, 1),
-    puffColor: /^#[0-9a-f]{6}$/i.test(settings.puffColor ?? '') ? settings.puffColor : '#111111',
+    baseColor: /^#[0-9a-f]{6}$/i.test(settings.baseColor ?? '') ? settings.baseColor : '#111111',
     shadowColor: /^#[0-9a-f]{6}$/i.test(settings.shadowColor ?? '') ? settings.shadowColor : '#000000',
-    secondaryShadowColor: /^#[0-9a-f]{6}$/i.test(settings.secondaryShadowColor ?? '') ? settings.secondaryShadowColor : '#000000',
+    bounceShadowColor: /^#[0-9a-f]{6}$/i.test(settings.bounceShadowColor ?? '') ? settings.bounceShadowColor : '#000000',
     highlightColor: /^#[0-9a-f]{6}$/i.test(settings.highlightColor ?? '') ? settings.highlightColor : '#ffffff',
-    puffSettings: {
-      cornerRoundness: settings.cornerRoundness, expansion: settings.expansion, radius: settings.radius, normalSmoothing: settings.normalSmoothing,
-      grainStrength: settings.grainStrength, keyLightX: settings.keyLightX, keyLightY: settings.keyLightY,
-      keyLightZ: settings.keyLightZ, highlightSize: settings.highlightSize, rimStrength: settings.rimStrength,
-      glossStrength: settings.glossStrength, ambient: settings.ambient, secondaryShadowStrength: settings.secondaryShadowStrength,
-    },
-    time: settings.time === undefined ? undefined : finite(settings.time, 0, 0, 1e7),
+    cornerRoundness: settings.cornerRoundness,
+    radius: settings.radius,
+    smoothing: settings.smoothing,
+    lightX: settings.lightX,
+    lightY: settings.lightY,
+    lightZ: settings.lightZ,
+    highlightSize: settings.highlightSize,
+    glossStrength: settings.glossStrength,
+    ambient: settings.ambient,
+    bounceStrength: settings.bounceStrength,
   };
   const optionsRef = useRef(renderOptions); optionsRef.current = renderOptions;
   const supportedElement = isValidElement(children) && typeof children.type === 'string' && /^(h[1-6]|p|span)$/.test(children.type);
@@ -92,7 +90,7 @@ export function TextRender(props: TextRenderProps) {
     refreshRef.current = schedule;
     const init = () => {
       try {
-        if ((shader as string) !== 'puff') throw new Error('Only the Puff shader is supported.');
+        if ((shader as string) !== 'resin') throw new Error('Only the Resin shader is supported.');
         rendererRef.current = new TextRenderer(canvas, host, optionsRef.current, fail);
         schedule();
       } catch (error) { fail(error as Error); }

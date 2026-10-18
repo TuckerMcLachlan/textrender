@@ -1,13 +1,25 @@
 import { vertex, fragment } from './shader';
-import { puff } from './skins';
-import type { RenderOptions } from './types';
+import { resin } from './skins';
+import type { ResinOptions, ResolvedResinOptions } from './types';
 import type { TextMask } from './typography';
 
-const defaultPuffSettings = {
-  cornerRoundness: 0, expansion: 0.065, radius: 0.1, normalSmoothing: 0.022, grainStrength: 0.055,
-  keyLightX: -0.65, keyLightY: 0.85, keyLightZ: 0.85, highlightSize: 22,
-  rimStrength: 0.55, glossStrength: 0.16, ambient: 0.4, secondaryShadowStrength: 0,
-};
+const resolveResinOptions = (options: ResinOptions): ResolvedResinOptions => ({
+  puffiness: options.puffiness ?? resin.defaults.puffiness,
+  baseColor: options.baseColor ?? resin.defaults.baseColor,
+  shadowColor: options.shadowColor ?? resin.defaults.shadowColor,
+  bounceShadowColor: options.bounceShadowColor ?? resin.defaults.bounceShadowColor,
+  highlightColor: options.highlightColor ?? resin.defaults.highlightColor,
+  cornerRoundness: options.cornerRoundness ?? resin.defaults.cornerRoundness,
+  radius: options.radius ?? resin.defaults.radius,
+  smoothing: options.smoothing ?? resin.defaults.smoothing,
+  lightX: options.lightX ?? resin.defaults.lightX,
+  lightY: options.lightY ?? resin.defaults.lightY,
+  lightZ: options.lightZ ?? resin.defaults.lightZ,
+  highlightSize: options.highlightSize ?? resin.defaults.highlightSize,
+  glossStrength: options.glossStrength ?? resin.defaults.glossStrength,
+  ambient: options.ambient ?? resin.defaults.ambient,
+  bounceStrength: options.bounceStrength ?? resin.defaults.bounceStrength,
+});
 
 export class TextRenderer {
   readonly gl: WebGL2RenderingContext;
@@ -19,20 +31,20 @@ export class TextRenderer {
   private elapsed = 0;
   private last = 0;
   private visible = true;
-  private options: RenderOptions;
+  private options: ResolvedResinOptions;
   private reduced: MediaQueryList;
   private disposed = false;
   private observer: IntersectionObserver;
 
   constructor(private canvas: HTMLCanvasElement, private host: HTMLElement,
-    options: RenderOptions, private fail: (error: Error) => void) {
+    options: ResinOptions, private fail: (error: Error) => void) {
     const gl = canvas.getContext('webgl2', { alpha: true, antialias: false, premultipliedAlpha: true, depth: false, stencil: false });
     if (!gl) throw new Error('WebGL2 is unavailable.');
     this.gl = gl;
     const texture = gl.createTexture();
     if (!texture) throw new Error('Unable to allocate a text texture.');
     this.texture = texture;
-    this.options = options;
+    this.options = resolveResinOptions(options);
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
@@ -50,7 +62,7 @@ export class TextRenderer {
   }
   get maxTextureSize(): number { return Math.min(8192, this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE)); }
   private initializeProgram() {
-    const source = fragment(puff.fragment, true);
+    const source = fragment(resin.fragment, true);
     const gl = this.gl;
     const compile = (type: number, source: string) => {
       const shader = gl.createShader(type);
@@ -58,7 +70,7 @@ export class TextRenderer {
       gl.shaderSource(shader, source); gl.compileShader(shader);
       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
         const message = gl.getShaderInfoLog(shader); gl.deleteShader(shader);
-        throw new Error(`Puff shader: ${message}`);
+        throw new Error(`Resin shader: ${message}`);
       }
       return shader;
     };
@@ -103,8 +115,8 @@ export class TextRenderer {
     this.draw();
     this.wake();
   }
-  setOptions(options: RenderOptions) {
-    this.options = options;
+  setOptions(options: ResinOptions) {
+    this.options = resolveResinOptions(options);
     this.wake();
   }
   private location(name: string) {
@@ -122,35 +134,30 @@ export class TextRenderer {
     gl.uniform2f(this.location('u_cssSize'), m.cssWidth, m.cssHeight);
     gl.uniform1f(this.location('u_fontSize'), m.fontSize);
     gl.uniform1f(this.location('u_distanceRange'), m.distanceRange);
-    gl.uniform1f(this.location('u_time'), o.time ?? (this.reduced.matches ? 0 : this.elapsed));
-    gl.uniform1f(this.location('u_intensity'), o.intensity);
-    gl.uniform1f(this.location('u_textureScale'), o.textureScale);
-    gl.uniform1f(this.location('u_seed'), o.seed);
-    const puffiness = o.puffiness ?? 0.5;
-    gl.uniform1f(this.location('u_puffiness'), Number.isFinite(puffiness) ? Math.max(0, Math.min(1, puffiness)) : 0.5);
-    const puffColor = Number.parseInt((o.puffColor ?? '#111111').slice(1), 16);
-    gl.uniform3f(this.location('u_puffColor'), ((puffColor >> 16) & 255) / 255, ((puffColor >> 8) & 255) / 255, (puffColor & 255) / 255);
-    const shadowColor = Number.parseInt((o.shadowColor ?? '#000000').slice(1), 16);
+    const puffiness = o.puffiness;
+    const normalizedPuffiness = Number.isFinite(puffiness) ? Math.max(0, Math.min(1, puffiness)) : 0.5;
+    const shapePuffiness = Math.min(1, normalizedPuffiness * 7 / 3);
+    const expansionScale = shapePuffiness > 0 ? normalizedPuffiness * 0.035 / shapePuffiness : 0.015;
+    gl.uniform1f(this.location('u_puffiness'), shapePuffiness);
+    const baseColor = Number.parseInt(o.baseColor.slice(1), 16);
+    gl.uniform3f(this.location('u_puffColor'), ((baseColor >> 16) & 255) / 255, ((baseColor >> 8) & 255) / 255, (baseColor & 255) / 255);
+    const shadowColor = Number.parseInt(o.shadowColor.slice(1), 16);
     gl.uniform3f(this.location('u_puffShadowColor'), ((shadowColor >> 16) & 255) / 255, ((shadowColor >> 8) & 255) / 255, (shadowColor & 255) / 255);
-    const secondaryShadowColor = Number.parseInt((o.secondaryShadowColor ?? '#000000').slice(1), 16);
-    gl.uniform3f(this.location('u_puffSecondaryShadowColor'), ((secondaryShadowColor >> 16) & 255) / 255, ((secondaryShadowColor >> 8) & 255) / 255, (secondaryShadowColor & 255) / 255);
-    const highlightColor = Number.parseInt((o.highlightColor ?? '#ffffff').slice(1), 16);
+    const bounceShadowColor = Number.parseInt(o.bounceShadowColor.slice(1), 16);
+    gl.uniform3f(this.location('u_puffSecondaryShadowColor'), ((bounceShadowColor >> 16) & 255) / 255, ((bounceShadowColor >> 8) & 255) / 255, (bounceShadowColor & 255) / 255);
+    const highlightColor = Number.parseInt(o.highlightColor.slice(1), 16);
     gl.uniform3f(this.location('u_puffHighlightColor'), ((highlightColor >> 16) & 255) / 255, ((highlightColor >> 8) & 255) / 255, (highlightColor & 255) / 255);
-    const puff = {
-      ...defaultPuffSettings,
-      ...Object.fromEntries(Object.entries(o.puffSettings ?? {}).filter(([, value]) => value !== undefined)),
-    };
-    gl.uniform1f(this.location('u_puffCornerRoundness'), Math.max(0, Math.min(1, puff.cornerRoundness)));
-    gl.uniform1f(this.location('u_puffExpansion'), puff.expansion);
-    gl.uniform1f(this.location('u_puffRadius'), puff.radius);
-    gl.uniform1f(this.location('u_puffNormalSmoothing'), puff.normalSmoothing);
-    gl.uniform1f(this.location('u_puffGrainStrength'), puff.grainStrength);
-    gl.uniform3f(this.location('u_puffKeyLight'), puff.keyLightX, puff.keyLightY, puff.keyLightZ);
-    gl.uniform1f(this.location('u_puffHighlightSize'), puff.highlightSize);
-    gl.uniform1f(this.location('u_puffRimStrength'), puff.rimStrength);
-    gl.uniform1f(this.location('u_puffGlossStrength'), puff.glossStrength);
-    gl.uniform1f(this.location('u_puffAmbient'), puff.ambient);
-    gl.uniform1f(this.location('u_puffSecondaryShadowStrength'), Math.max(0, Math.min(1, puff.secondaryShadowStrength)));
+    gl.uniform1f(this.location('u_puffCornerRoundness'), Math.max(0, Math.min(1, o.cornerRoundness)));
+    gl.uniform1f(this.location('u_puffExpansion'), expansionScale);
+    gl.uniform1f(this.location('u_puffRadius'), o.radius);
+    gl.uniform1f(this.location('u_puffNormalSmoothing'), o.smoothing);
+    gl.uniform1f(this.location('u_puffGrainStrength'), 0);
+    gl.uniform3f(this.location('u_puffKeyLight'), o.lightX, o.lightY, o.lightZ);
+    gl.uniform1f(this.location('u_puffHighlightSize'), o.highlightSize);
+    gl.uniform1f(this.location('u_puffRimStrength'), 0);
+    gl.uniform1f(this.location('u_puffGlossStrength'), o.glossStrength);
+    gl.uniform1f(this.location('u_puffAmbient'), o.ambient);
+    gl.uniform1f(this.location('u_puffSecondaryShadowStrength'), Math.max(0, Math.min(1, o.bounceStrength)));
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
   private tick = (now: number) => {
@@ -158,8 +165,8 @@ export class TextRenderer {
     if (this.disposed || !this.visible || document.hidden) { this.last = 0; return; }
     const delta = this.last ? Math.min((now - this.last) / 1000, 0.05) : 0;
     this.last = now;
-    const moving = !this.reduced.matches && this.options.animated && this.options.time === undefined && this.options.speed > 0;
-    if (moving) this.elapsed += delta * this.options.speed;
+    const moving = !this.reduced.matches;
+    if (moving) this.elapsed += delta;
     try { this.draw(); } catch (error) { this.fail(error as Error); return; }
     if (moving) this.frame = requestAnimationFrame(this.tick);
     else this.last = 0;

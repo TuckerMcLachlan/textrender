@@ -1,4 +1,4 @@
-import type { RenderOptions } from './types';
+import type { ResinOptions } from './types';
 import type { TextMask } from './typography';
 export declare class TextRenderer {
     private canvas;
@@ -17,11 +17,11 @@ export declare class TextRenderer {
     private reduced;
     private disposed;
     private observer;
-    constructor(canvas: HTMLCanvasElement, host: HTMLElement, options: RenderOptions, fail: (error: Error) => void);
+    constructor(canvas: HTMLCanvasElement, host: HTMLElement, options: ResinOptions, fail: (error: Error) => void);
     get maxTextureSize(): number;
     private initializeProgram;
     setMask(mask: TextMask): void;
-    setOptions(options: RenderOptions): void;
+    setOptions(options: ResinOptions): void;
     private location;
     private draw;
     private tick;
