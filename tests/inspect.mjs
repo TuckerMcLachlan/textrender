@@ -1,0 +1,11 @@
+import { chromium } from '@playwright/test';
+const browser = await chromium.launch({ channel: 'chrome', args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const page = await browser.newPage({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1 });
+page.on('pageerror', e => console.log('PAGE ERROR', e.message));
+page.on('console', m => { if (m.type() === 'error') console.log('CONSOLE', m.text()); });
+await page.goto('http://127.0.0.1:5174');
+await page.waitForTimeout(4000);
+console.log(await page.locator('[data-shader-state]').evaluateAll(els => els.map(e => ({ text: e.textContent, state: e.dataset.shaderState, box: e.getBoundingClientRect().toJSON(), fill: getComputedStyle(e).webkitTextFillColor }))));
+console.log('Error', await page.locator('.error-note').allTextContents());
+await page.screenshot({ path: 'test-results/playground.png', fullPage: true });
+await browser.close();

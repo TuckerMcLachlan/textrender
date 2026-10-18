@@ -1,0 +1,30 @@
+import type { RenderOptions } from './types';
+import type { TextMask } from './typography';
+export declare class TextRenderer {
+    private canvas;
+    private host;
+    private fail;
+    readonly gl: WebGL2RenderingContext;
+    private program;
+    private texture;
+    private uniforms;
+    private mask;
+    private frame;
+    private elapsed;
+    private last;
+    private visible;
+    private options;
+    private reduced;
+    private disposed;
+    private observer;
+    constructor(canvas: HTMLCanvasElement, host: HTMLElement, options: RenderOptions, fail: (error: Error) => void);
+    get maxTextureSize(): number;
+    private initializeProgram;
+    setMask(mask: TextMask): void;
+    setOptions(options: RenderOptions): void;
+    private location;
+    private draw;
+    private tick;
+    private wake;
+    dispose(): void;
+}
