@@ -131,10 +131,9 @@ The package exports:
 
 ## Compatibility
 
-`TextRender` is designed for modern evergreen browsers. The supported browser
-families are Chromium, Firefox, and WebKit; these are exercised in CI with the
-Playwright browser matrix. Capability detection is authoritative, so a browser
-version is supported only when it provides the APIs below.
+`TextRender` targets modern evergreen browsers. CI validates packed-package
+consumer smoke tests in Chromium with React 18 and React 19. Shader rendering requires the capabilities
+listed below.
 
 The component requires:
 
@@ -178,21 +177,24 @@ npm ci
 npm run dev
 ```
 
-Run the typecheck, build, and Playwright browser suite with:
+CI runs typechecking, the library build, and the packed-package consumer smoke
+tests. Run those checks locally with:
 
 ```bash
 npm run typecheck
 npm run build
-npm test
-```
-
-Run the packed-package consumer checks against React 18 and React 19 with:
-
-```bash
 npm run test:consumer
 ```
 
-Each version uses an isolated installation with matching React DOM and React
-type packages, and checks TypeScript usage, server rendering, WebGL output,
-and child refs. To check one version, use `npm run test:consumer -- --react=18`
+The separate Playwright regression suite is not currently run in CI. Run it
+locally with:
+
+```bash
+npm test
+```
+
+The consumer checks cover React 18 and React 19. Each version uses an isolated
+installation with matching React DOM and React type packages, and checks
+TypeScript usage, server rendering, WebGL output, and child refs. To check one
+version, use `npm run test:consumer -- --react=18`
 or `npm run test:consumer -- --react=19`.
