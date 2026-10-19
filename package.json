@@ -1,7 +1,7 @@
 {
   "name": "textrender",
   "version": "0.0.1",
-  "description": "Procedural shader materials for React typography",
+  "description": "Procedural shaders for web typography",
   "homepage": "https://textrender.dev",
   "repository": {
     "type": "git",
