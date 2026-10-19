@@ -1,6 +1,6 @@
 # textrender
 
-Procedural shader materials for React typography.
+Shaders for web typography, starting with React.
 
 ## Installation
 
@@ -50,8 +50,6 @@ callbacks such as `onError`, create a component with `"use client"` and define
 the callback there. The shared entry also makes `resin` and `skins` client
 exports; read their values within client code. Type-only imports remain usable
 in server code.
-
-See the [Next.js guidance for library authors](https://nextjs.org/docs/app/getting-started/server-and-client-components#third-party-components).
 
 ## API
 
