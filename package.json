@@ -2,6 +2,7 @@
   "name": "textrender",
   "version": "0.0.1",
   "description": "Procedural shader materials for React typography",
+  "homepage": "https://textrender.dev",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TuckerMcLachlan/textrender.git"
