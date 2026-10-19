@@ -6,29 +6,43 @@ import type { ResinOptions, TextRenderProps } from './types';
 
 const finite = (n: number, fallback: number, min: number, max: number) => Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
 
+const compatibilityError = (): Error | null => {
+  const missing: string[] = [];
+  if (typeof ResizeObserver !== 'function') missing.push('ResizeObserver');
+  if (typeof IntersectionObserver !== 'function') missing.push('IntersectionObserver');
+  if (typeof MutationObserver !== 'function') missing.push('MutationObserver');
+  if (typeof Intl === 'undefined' || typeof Intl.Segmenter !== 'function') missing.push('Intl.Segmenter');
+  if (!document.fonts || typeof document.fonts.addEventListener !== 'function' || !document.fonts.ready) {
+    missing.push('the Font Loading API');
+  }
+  return missing.length ? new Error(`TextRender requires ${missing.join(', ')}; displaying HTML text.`) : null;
+};
+
 export function TextRender(props: TextRenderProps) {
   const { children, shader = 'resin', onError, ...settings } = props;
   const hostRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<TextRenderer | null>(null);
   const refreshRef = useRef<(() => void) | null>(null);
-  const [ready, setReady] = useState(false);
+  const [renderState, setRenderState] = useState<'pending' | 'ready' | 'fallback'>('pending');
+  const [reducedMotion, setReducedMotion] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const latest = useRef({ onError }); latest.current = { onError };
   const renderOptions: ResinOptions = {
-    puffiness: finite(settings.puffiness ?? 0.5, 0.5, 0, 1),
+    puff: finite(settings.puff ?? 0.5, 0.5, 0, 1),
     baseColor: /^#[0-9a-f]{6}$/i.test(settings.baseColor ?? '') ? settings.baseColor : '#111111',
     shadowColor: /^#[0-9a-f]{6}$/i.test(settings.shadowColor ?? '') ? settings.shadowColor : '#000000',
     bounceShadowColor: /^#[0-9a-f]{6}$/i.test(settings.bounceShadowColor ?? '') ? settings.bounceShadowColor : '#000000',
     highlightColor: /^#[0-9a-f]{6}$/i.test(settings.highlightColor ?? '') ? settings.highlightColor : '#ffffff',
-    cornerRoundness: settings.cornerRoundness,
-    radius: settings.radius,
+    roundness: settings.roundness,
+    depth: settings.depth,
     smoothing: settings.smoothing,
     lightX: settings.lightX,
     lightY: settings.lightY,
     lightZ: settings.lightZ,
     highlightSize: settings.highlightSize,
-    glossStrength: settings.glossStrength,
-    ambient: settings.ambient,
+    gloss: settings.gloss,
+    brightness: settings.brightness,
     bounceStrength: settings.bounceStrength,
   };
   const optionsRef = useRef(renderOptions); optionsRef.current = renderOptions;
@@ -45,17 +59,29 @@ export function TextRender(props: TextRenderProps) {
   }, [childRef]);
 
   useEffect(() => {
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const change = () => setReducedMotion(media.matches);
+    change();
+    media.addEventListener('change', change);
+    return () => media.removeEventListener('change', change);
+  }, []);
+
+  useEffect(() => {
     const host = hostRef.current, canvas = canvasRef.current;
     if (!host || !canvas || !plain) return;
     let disposed = false, pending = 0, revealPending = 0, signature = '', fontsReady = false, maskKey = '';
     let hasMask = false, revealed = false;
+    let resize: ResizeObserver | null = null;
+    let mutation: MutationObserver | null = null;
+    let fontChange: (() => void) | null = null;
     const hide = () => {
       cancelAnimationFrame(revealPending); revealPending = 0; revealed = false;
-      canvas.style.visibility = 'hidden'; setReady(false);
+      canvas.style.visibility = 'hidden'; canvas.style.opacity = '0'; setRenderState('pending');
     };
     const fail = (error: Error) => {
       if (disposed) return;
       hide();
+      setRenderState('fallback');
       latest.current.onError?.(error);
     };
     const layoutSignature = () => Array.from(host.getClientRects(), rect =>
@@ -79,7 +105,7 @@ export function TextRender(props: TextRenderProps) {
         if (!revealed && !revealPending) revealPending = requestAnimationFrame(() => {
           revealPending = 0;
           if (disposed || !hasMask || rendererRef.current?.gl.isContextLost()) return;
-          revealed = true; setReady(true);
+          revealed = true; setRenderState('ready');
         });
       } catch (error) { fail(error as Error); }
     };
@@ -96,33 +122,38 @@ export function TextRender(props: TextRenderProps) {
       } catch (error) { fail(error as Error); }
     };
     const lost = (event: Event) => { event.preventDefault(); fail(new Error('WebGL context lost; displaying HTML text.')); };
-    const restored = () => { rendererRef.current?.dispose(); rendererRef.current = null; hasMask = false; init(); };
-    canvas.addEventListener('webglcontextlost', lost);
-    canvas.addEventListener('webglcontextrestored', restored);
-    init();
-    const resize = new ResizeObserver(schedule); resize.observe(host);
-    const mutation = new MutationObserver(schedule);
-    const inline = getComputedStyle(host).display.startsWith('inline');
-    const mutationTarget = inline && host.parentElement ? host.parentElement : host;
-    mutation.observe(mutationTarget, { characterData: true, childList: true, subtree: true });
-    if (inline) {
-      let layoutContainer = host.parentElement;
-      while (layoutContainer?.parentElement && getComputedStyle(layoutContainer).display.startsWith('inline')) {
-        layoutContainer = layoutContainer.parentElement;
+    const restored = () => { hide(); rendererRef.current?.dispose(); rendererRef.current = null; hasMask = false; init(); };
+    try {
+      const unsupported = compatibilityError();
+      if (unsupported) throw unsupported;
+      canvas.addEventListener('webglcontextlost', lost);
+      canvas.addEventListener('webglcontextrestored', restored);
+      init();
+      resize = new ResizeObserver(schedule); resize.observe(host);
+      mutation = new MutationObserver(schedule);
+      const inline = getComputedStyle(host).display.startsWith('inline');
+      const mutationTarget = inline && host.parentElement ? host.parentElement : host;
+      mutation.observe(mutationTarget, { characterData: true, childList: true, subtree: true });
+      if (inline) {
+        let layoutContainer = host.parentElement;
+        while (layoutContainer?.parentElement && getComputedStyle(layoutContainer).display.startsWith('inline')) {
+          layoutContainer = layoutContainer.parentElement;
+        }
+        if (layoutContainer) resize.observe(layoutContainer);
       }
-      if (layoutContainer) resize.observe(layoutContainer);
-    }
-    const fontChange = () => { fontsReady = true; hasMask = false; schedule(); };
-    document.fonts.ready.then(fontChange);
-    document.fonts.addEventListener('loadingdone', fontChange);
+      fontChange = () => { fontsReady = true; hasMask = false; schedule(); };
+      document.fonts.ready.then(fontChange);
+      document.fonts.addEventListener('loadingdone', fontChange);
+    } catch (error) { fail(error as Error); }
     // CSS can change without a React render or a resize (e.g. inherited font/spacing).
     const interval = window.setInterval(() => {
       if (!document.hidden && typographySignature(host) !== signature) schedule();
     }, 400);
     return () => {
       disposed = true; cancelAnimationFrame(pending); cancelAnimationFrame(revealPending); clearInterval(interval);
-      refreshRef.current = null; resize.disconnect(); mutation.disconnect();
-      document.fonts.removeEventListener('loadingdone', fontChange);
+      refreshRef.current = null;
+      resize?.disconnect(); mutation?.disconnect();
+      if (fontChange) document.fonts.removeEventListener('loadingdone', fontChange);
       canvas.removeEventListener('webglcontextlost', lost);
       canvas.removeEventListener('webglcontextrestored', restored);
       rendererRef.current?.dispose(); rendererRef.current = null;
@@ -137,15 +168,16 @@ export function TextRender(props: TextRenderProps) {
   if (!supportedElement || !plain) return children;
   return cloneElement(children, {
     ref: mergedRef,
-    'data-shader-state': ready ? 'ready' : 'fallback',
+    'data-shader-state': renderState,
     style: {
       ...children.props.style,
       position: children.props.style?.position && children.props.style.position !== 'static' ? children.props.style.position : 'relative',
-      ...(ready ? { WebkitTextFillColor: 'transparent' } : {}),
+      ...(renderState !== 'fallback' ? { color: 'transparent', WebkitTextFillColor: 'transparent' } : {}),
     },
   } as Partial<typeof children.props>, String(children.props.children),
     <canvas key="shader-canvas" ref={canvasRef} aria-hidden="true" style={{
-      position: 'absolute', background: 'transparent', pointerEvents: 'none', visibility: ready ? 'visible' : 'hidden', display: 'block',
+      position: 'absolute', background: 'transparent', pointerEvents: 'none', visibility: renderState === 'ready' ? 'visible' : 'hidden',
+      opacity: renderState === 'ready' ? 1 : 0, transition: reducedMotion ? 'none' : 'opacity 150ms ease', display: 'block',
       maxWidth: 'none', userSelect: 'none',
     }} />);
 }

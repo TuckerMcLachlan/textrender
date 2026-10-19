@@ -2,7 +2,7 @@ import type { CSSProperties, ReactElement, Ref } from 'react';
 
 export interface ResinOptions {
   /** Resin outline expansion and rounding, 0–1. Maps to 0–0.035em expansion. Default: 0.5. */
-  puffiness?: number;
+  puff?: number;
   /** Six-digit hex Resin base colour. Default: #111111. */
   baseColor?: string;
   /** Six-digit hex colour used for the darkest unlit areas. Default: #000000. */
@@ -12,21 +12,23 @@ export interface ResinOptions {
   /** Six-digit hex colour used for glossy specular highlights. Default: #ffffff. */
   highlightColor?: string;
   /** Two-dimensional glyph-corner rounding, 0–1. Default: 0. */
-  cornerRoundness?: number;
-  /** Crown radius as a fraction of font size. Default: 0.1. */
-  radius?: number;
-  /** Normal sampling distance as a fraction of font size. Default: 0.022. */
+  roundness?: number;
+  /** Crown depth, normalized from 0–1 to a 0–0.2 font-size fraction. Default: 0.5. */
+  depth?: number;
+  /** Normal sampling distance, normalized from 0–1 to 0.025–0.060. Default: 0. */
   smoothing?: number;
-  /** Direction and height of the primary light. */
+  /** Horizontal direction of the primary light, -1–1. */
   lightX?: number;
+  /** Vertical direction of the primary light, -1–1. */
   lightY?: number;
+  /** Height of the primary light, normalized from 0–1 to 0–0.5. Default: 1. */
   lightZ?: number;
-  /** Primary highlight exponent. Lower values make a broader highlight. Default: 22. */
+  /** Primary highlight exponent, reverse-normalized from 0–1 to 40–5. Default: 18/35. */
   highlightSize?: number;
   /** Base specular contribution. Default: 0.16. */
-  glossStrength?: number;
+  gloss?: number;
   /** Base diffuse brightness. Default: 0.4. */
-  ambient?: number;
+  brightness?: number;
   /** Strength of the shadow cast by the light opposite the key light, 0–1. Default: 0. */
   bounceStrength?: number;
 }

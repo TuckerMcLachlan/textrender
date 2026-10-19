@@ -28,6 +28,7 @@
     "prepack": "npm run build:lib",
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
+    "test:consumer": "node scripts/consumer-smoke.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "keywords": [
@@ -36,8 +37,8 @@
     "typography",
     "webgl"
   ],
-  "license": "ISC",
-  "packageManager": "pnpm@10.11.0",
+  "license": "MIT",
+  "packageManager": "npm@10.9.8",
   "peerDependencies": {
     "react": ">=18",
     "react-dom": ">=18"
@@ -52,11 +53,12 @@
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.5.0",
+    "dialkit": "^2.0.2",
+    "motion": "^12.43.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^5.8.0",
-    "vite": "^6.3.0",
-    "dialkit": "^2.0.2"
+    "vite": "^6.3.0"
   }
 }

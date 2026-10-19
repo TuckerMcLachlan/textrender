@@ -7,24 +7,24 @@ import type { ResinOptions } from '../lib';
 export function App() {
   const resinDial = useDialKitController('Resin shader', {
     shape: {
-      puffiness: [0.2614285714, 0, 1, 0.01],
-      cornerRoundness: [0.41, 0, 1, 0.01],
-      radius: [0.131, 0.04, 0.2, 0.001],
-      smoothing: [0.054, 0.005, 0.06, 0.001],
+      puff: [0.2614285714, 0, 1, 0.01],
+      roundness: [0.41, 0, 1, 0.01],
+      depth: [0.655, 0, 1, 0.01],
+      smoothing: [0.8285714286, 0, 1, 0.01],
     },
     surface: {
       baseColor: '#ffffff',
       shadowColor: '#ffffff',
       bounceShadowColor: '#001944',
+      highlightColor: '#e36200'
     },
     lighting: {
       light: { type: 'pad', x: [-0.9, -1, 1, 0.01], y: [0.93, -1, 1, 0.01], labels: { x: 'horizontal', y: 'vertical' } },
-      lightHeight: [0.29, 0.1, 2, 0.01],
-      highlightSize: [8, 2, 80, 1],
-      glossStrength: [0.76, 0, 0.99, 0.01],
-      ambient: [0.45, 0, 1, 0.01],
+      lightZ: [0.58, 0, 1, 0.01],
+      highlightSize: [0.9142857143, 0, 1, 0.01],
+      gloss: [0.76, 0, 0.99, 0.01],
+      brightness: [0.45, 0, 1, 0.01],
       bounceStrength: [0.56, 0, 1, 0.01],
-      highlightColor: '#e36200',
     },
   }, { id: 'resin-shader-v8-api-v2', persist: true, defaultCollapsed: true });
   const resin = resinDial.values;
@@ -37,20 +37,20 @@ export function App() {
     overflowWrap: 'anywhere',
   };
   const resinProps: ResinOptions = {
-    puffiness: resin.shape.puffiness,
-    cornerRoundness: resin.shape.cornerRoundness,
+    puff: resin.shape.puff,
+    roundness: resin.shape.roundness,
     baseColor: resin.surface.baseColor,
     shadowColor: resin.surface.shadowColor,
     bounceShadowColor: resin.surface.bounceShadowColor,
-    highlightColor: resin.lighting.highlightColor,
-    radius: resin.shape.radius,
+    highlightColor: resin.surface.highlightColor,
+    depth: resin.shape.depth,
     smoothing: resin.shape.smoothing,
     lightX: resin.lighting.light.x,
     lightY: resin.lighting.light.y,
-    lightZ: resin.lighting.lightHeight,
+    lightZ: resin.lighting.lightZ,
     highlightSize: resin.lighting.highlightSize,
-    glossStrength: resin.lighting.glossStrength,
-    ambient: resin.lighting.ambient,
+    gloss: resin.lighting.gloss,
+    brightness: resin.lighting.brightness,
     bounceStrength: resin.lighting.bounceStrength,
   };
   return <div className="app-shell bg-black">

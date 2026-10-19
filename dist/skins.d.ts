@@ -9,20 +9,20 @@ export declare const resin: {
     id: "resin";
     label: string;
     defaults: {
-        puffiness: number;
+        puff: number;
         baseColor: string;
         shadowColor: string;
         bounceShadowColor: string;
         highlightColor: string;
-        cornerRoundness: number;
-        radius: number;
+        roundness: number;
+        depth: number;
         smoothing: number;
         lightX: number;
         lightY: number;
         lightZ: number;
         highlightSize: number;
-        glossStrength: number;
-        ambient: number;
+        gloss: number;
+        brightness: number;
         bounceStrength: number;
     };
     fragment: string;

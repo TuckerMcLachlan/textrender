@@ -4,22 +4,26 @@ import type { ResinOptions, ResolvedResinOptions } from './types';
 import type { TextMask } from './typography';
 
 const resolveResinOptions = (options: ResinOptions): ResolvedResinOptions => ({
-  puffiness: options.puffiness ?? resin.defaults.puffiness,
+  puff: options.puff ?? resin.defaults.puff,
   baseColor: options.baseColor ?? resin.defaults.baseColor,
   shadowColor: options.shadowColor ?? resin.defaults.shadowColor,
   bounceShadowColor: options.bounceShadowColor ?? resin.defaults.bounceShadowColor,
   highlightColor: options.highlightColor ?? resin.defaults.highlightColor,
-  cornerRoundness: options.cornerRoundness ?? resin.defaults.cornerRoundness,
-  radius: options.radius ?? resin.defaults.radius,
+  roundness: options.roundness ?? resin.defaults.roundness,
+  depth: options.depth ?? resin.defaults.depth,
   smoothing: options.smoothing ?? resin.defaults.smoothing,
   lightX: options.lightX ?? resin.defaults.lightX,
   lightY: options.lightY ?? resin.defaults.lightY,
   lightZ: options.lightZ ?? resin.defaults.lightZ,
   highlightSize: options.highlightSize ?? resin.defaults.highlightSize,
-  glossStrength: options.glossStrength ?? resin.defaults.glossStrength,
-  ambient: options.ambient ?? resin.defaults.ambient,
+  gloss: options.gloss ?? resin.defaults.gloss,
+  brightness: options.brightness ?? resin.defaults.brightness,
   bounceStrength: options.bounceStrength ?? resin.defaults.bounceStrength,
 });
+
+const clamp = (value: number, min: number, max: number, fallback: number) =>
+  Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
+const normalized = (value: number, fallback = 0.5) => clamp(value, 0, 1, fallback);
 
 export class TextRenderer {
   readonly gl: WebGL2RenderingContext;
@@ -134,11 +138,11 @@ export class TextRenderer {
     gl.uniform2f(this.location('u_cssSize'), m.cssWidth, m.cssHeight);
     gl.uniform1f(this.location('u_fontSize'), m.fontSize);
     gl.uniform1f(this.location('u_distanceRange'), m.distanceRange);
-    const puffiness = o.puffiness;
-    const normalizedPuffiness = Number.isFinite(puffiness) ? Math.max(0, Math.min(1, puffiness)) : 0.5;
-    const shapePuffiness = Math.min(1, normalizedPuffiness * 7 / 3);
-    const expansionScale = shapePuffiness > 0 ? normalizedPuffiness * 0.035 / shapePuffiness : 0.015;
-    gl.uniform1f(this.location('u_puffiness'), shapePuffiness);
+    const puff = o.puff;
+    const normalizedPuff = normalized(puff, resin.defaults.puff);
+    const shapePuff = Math.min(1, normalizedPuff * 7 / 3);
+    const expansionScale = shapePuff > 0 ? normalizedPuff * 0.035 / shapePuff : 0.015;
+    gl.uniform1f(this.location('u_puff'), shapePuff);
     const baseColor = Number.parseInt(o.baseColor.slice(1), 16);
     gl.uniform3f(this.location('u_puffColor'), ((baseColor >> 16) & 255) / 255, ((baseColor >> 8) & 255) / 255, (baseColor & 255) / 255);
     const shadowColor = Number.parseInt(o.shadowColor.slice(1), 16);
@@ -147,16 +151,16 @@ export class TextRenderer {
     gl.uniform3f(this.location('u_puffSecondaryShadowColor'), ((bounceShadowColor >> 16) & 255) / 255, ((bounceShadowColor >> 8) & 255) / 255, (bounceShadowColor & 255) / 255);
     const highlightColor = Number.parseInt(o.highlightColor.slice(1), 16);
     gl.uniform3f(this.location('u_puffHighlightColor'), ((highlightColor >> 16) & 255) / 255, ((highlightColor >> 8) & 255) / 255, (highlightColor & 255) / 255);
-    gl.uniform1f(this.location('u_puffCornerRoundness'), Math.max(0, Math.min(1, o.cornerRoundness)));
+    gl.uniform1f(this.location('u_puffRoundness'), normalized(o.roundness, resin.defaults.roundness));
     gl.uniform1f(this.location('u_puffExpansion'), expansionScale);
-    gl.uniform1f(this.location('u_puffRadius'), o.radius);
-    gl.uniform1f(this.location('u_puffNormalSmoothing'), o.smoothing);
+    gl.uniform1f(this.location('u_puffDepth'), normalized(o.depth, resin.defaults.depth) * 0.2);
+    gl.uniform1f(this.location('u_puffNormalSmoothing'), 0.025 + normalized(o.smoothing, resin.defaults.smoothing) * 0.035);
     gl.uniform1f(this.location('u_puffGrainStrength'), 0);
-    gl.uniform3f(this.location('u_puffKeyLight'), o.lightX, o.lightY, o.lightZ);
-    gl.uniform1f(this.location('u_puffHighlightSize'), o.highlightSize);
+    gl.uniform3f(this.location('u_puffKeyLight'), clamp(o.lightX, -1, 1, resin.defaults.lightX), clamp(o.lightY, -1, 1, resin.defaults.lightY), normalized(o.lightZ, resin.defaults.lightZ) * 0.5);
+    gl.uniform1f(this.location('u_puffHighlightSize'), 40 - normalized(o.highlightSize, resin.defaults.highlightSize) * 35);
     gl.uniform1f(this.location('u_puffRimStrength'), 0);
-    gl.uniform1f(this.location('u_puffGlossStrength'), o.glossStrength);
-    gl.uniform1f(this.location('u_puffAmbient'), o.ambient);
+    gl.uniform1f(this.location('u_puffGloss'), normalized(o.gloss, resin.defaults.gloss));
+    gl.uniform1f(this.location('u_puffBrightness'), normalized(o.brightness, resin.defaults.brightness));
     gl.uniform1f(this.location('u_puffSecondaryShadowStrength'), Math.max(0, Math.min(1, o.bounceStrength)));
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }

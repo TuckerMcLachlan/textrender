@@ -1,1 +1,13 @@
 /node_modules
+
+# OS metadata
+.DS_Store
+
+# Test and debug output
+/test-results/
+/playwright-report/
+trace.zip
+error-context.md
+
+# Generated package archives
+*.tgz

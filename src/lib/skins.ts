@@ -10,20 +10,20 @@ export type SkinDefinition<S extends SkinName> = {
 export const resin = {
   id: 'resin', label: 'Resin',
   defaults: {
-    puffiness: 0.5,
+    puff: 0.5,
     baseColor: '#111111',
     shadowColor: '#000000',
     bounceShadowColor: '#000000',
     highlightColor: '#ffffff',
-    cornerRoundness: 0,
-    radius: 0.1,
-    smoothing: 0.022,
+    roundness: 0,
+    depth: 0.5,
+    smoothing: 0,
     lightX: -0.65,
     lightY: 0.85,
-    lightZ: 0.85,
-    highlightSize: 22,
-    glossStrength: 0.16,
-    ambient: 0.4,
+    lightZ: 1,
+    highlightSize: 18 / 35,
+    gloss: 0.16,
+    brightness: 0.4,
     bounceStrength: 0,
   },
   fragment: `
@@ -38,7 +38,7 @@ float puffDistance(vec2 uv) {
 // ring avoids the axial bumps produced by a sparse cross/diagonal kernel.
 float puffRoundedDistance(vec2 uv) {
   float baseRadius = max(0.7, u_fontSize * 0.008);
-  float sampleRadius = mix(baseRadius, u_fontSize * 0.055, u_puffCornerRoundness);
+  float sampleRadius = mix(baseRadius, u_fontSize * 0.055, u_puffRoundness);
   vec2 e = vec2(sampleRadius) / u_cssSize;
   return (distanceAt(uv) * 4.0
     + distanceAt(uv + e * vec2(1.0, 0.0))
@@ -55,17 +55,17 @@ float puffRoundedDistance(vec2 uv) {
     + distanceAt(uv + e * vec2(0.8660254, -0.5))) / 16.0;
 }
 float puffShapeDistance(vec2 uv) {
-  if (u_puffCornerRoundness < 0.0001) return distanceAt(uv);
-  return mix(distanceAt(uv), puffRoundedDistance(uv), u_puffCornerRoundness);
+  if (u_puffRoundness < 0.0001) return distanceAt(uv);
+  return mix(distanceAt(uv), puffRoundedDistance(uv), u_puffRoundness);
 }
 float puffOutlineDistance(vec2 uv) {
-  if (u_puffCornerRoundness < 0.0001) return puffDistance(uv);
-  return mix(puffDistance(uv), puffRoundedDistance(uv), u_puffCornerRoundness);
+  if (u_puffRoundness < 0.0001) return puffDistance(uv);
+  return mix(puffDistance(uv), puffRoundedDistance(uv), u_puffRoundness);
 }
 // A circular cross-section gives strokes a soft crown and steep, rounded sides.
 float puffHeight(vec2 uv) {
-  float expansion = u_fontSize * u_puffExpansion * u_puffiness;
-  float radius = u_fontSize * u_puffRadius + expansion;
+  float expansion = u_fontSize * u_puffExpansion * u_puff;
+  float radius = u_fontSize * u_puffDepth + expansion;
   float d = clamp(puffShapeDistance(uv) + expansion, 0.0, radius);
   return sqrt(max(0.0, d * (2.0 * radius - d)));
 }
@@ -93,15 +93,15 @@ vec4 material(Surface s) {
   // Offsetting the Euclidean distance field dilates the glyph with a circular
   // kernel: corners grow round, and nearby letters can merge naturally.
   // Maximum expansion stays within the mask's 0.12em distance range.
-  float d = puffOutlineDistance(s.uv) + u_fontSize * u_puffExpansion * u_puffiness;
+  float d = puffOutlineDistance(s.uv) + u_fontSize * u_puffExpansion * u_puff;
   float pixel = u_cssSize.y / u_resolution.y;
   float aa = max(fwidth(d), pixel * 0.75);
   float original = texture(u_mask, s.uv).r;
   float rounded = smoothstep(-aa, aa, d);
-  float expanded = mix(max(original, rounded), rounded, u_puffCornerRoundness);
+  float expanded = mix(max(original, rounded), rounded, u_puffRoundness);
   // Retain exact raster coverage when both shaping controls are zero. Roundness
   // may erode sharp tips as well as filling tight interior corners.
-  float shaping = max(smoothstep(0.0, 0.06, u_puffiness), u_puffCornerRoundness);
+  float shaping = max(smoothstep(0.0, 0.06, u_puff), u_puffRoundness);
   float alpha = mix(original, expanded, shaping);
   if (alpha < 0.005) return vec4(0.0);
   float normalRadius = max(1.25, u_fontSize * max(0.02, u_puffNormalSmoothing * 1.35));
@@ -135,11 +135,11 @@ vec4 material(Surface s) {
   float sheen = pow(max(dot(n, normalize(fill + view)), 0.0), 34.0);
   float rim = pow(1.0 - n.z, 2.5);
   float keyVisibility = smoothstep(0.05, 0.35, diffuse);
-  float gloss = (u_puffGlossStrength + 0.12 * u_intensity) * soft
+  float gloss = (u_puffGloss + 0.12 * u_intensity) * soft
     + 0.04 * sheen * keyVisibility;
   gloss *= mix(0.15, 1.0, normalReliability);
   float texture = (noise(s.p * 150.0) - 0.5) * 0.012 * u_intensity;
-  float bodyLight = u_puffAmbient + 0.70 * diffuse + 0.20 * n.z + rim * u_puffRimStrength + texture;
+  float bodyLight = u_puffBrightness + 0.70 * diffuse + 0.20 * n.z + rim * u_puffRimStrength + texture;
   float shade = clamp(bodyLight, 0.0, 1.0);
   vec3 col = mix(u_puffShadowColor, u_puffColor, shade);
   col += u_puffColor * max(bodyLight - 1.0, 0.0);

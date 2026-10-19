@@ -25,6 +25,7 @@ export function TestFixture() {
       {mounted && <TextRender onError={e => setErrors(prev => [...prev, e.message])}><h1 ref={ref} id="fixture-text" style={{ fontFamily: font === 'Times New Roman' ? '"Times New Roman", Times, serif' : font, fontSize: size, fontWeight: 700, lineHeight: 1.2, margin: 0, whiteSpace: 'pre-wrap', letterSpacing: spacing, textAlign: align, overflowWrap: 'anywhere' }}>{text}</h1></TextRender>}
     </div>
     <TextRender><p id="unsupported"><strong>Rich</strong> text stays readable.</p></TextRender>
+    <TextRender shader={'unsupported' as 'resin'}><span id="shader-fallback">Shader fallback text.</span></TextRender>
     <div id="inline-fixture" style={{ width: 620 }}>
       <p style={{ fontFamily: 'Space Grotesk', fontSize: 64, fontWeight: 800, lineHeight: 1.05, margin: 0 }}>
         <TextRender shader="resin" baseColor="#999555">
