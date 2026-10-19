@@ -32,11 +32,9 @@ export class TextRenderer {
   private uniforms = new Map<string, WebGLUniformLocation | null>();
   private mask: TextMask | null = null;
   private frame = 0;
-  private elapsed = 0;
-  private last = 0;
+  private dirty = true;
   private visible = true;
   private options: ResolvedResinOptions;
-  private reduced: MediaQueryList;
   private disposed = false;
   private observer: IntersectionObserver;
 
@@ -54,8 +52,6 @@ export class TextRenderer {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    this.reduced = matchMedia('(prefers-reduced-motion: reduce)');
-    this.reduced.addEventListener('change', this.wake);
     document.addEventListener('visibilitychange', this.wake);
     this.observer = new IntersectionObserver(entries => {
       this.visible = entries[0].isIntersecting;
@@ -97,6 +93,10 @@ export class TextRenderer {
     this.wake();
   }
   setMask(mask: TextMask) {
+    if (this.disposed) return;
+    this.dirty = true;
+    cancelAnimationFrame(this.frame);
+    this.frame = 0;
     this.mask = mask;
     const { canvas, gl } = this;
     canvas.width = mask.width; canvas.height = mask.height;
@@ -116,11 +116,17 @@ export class TextRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, mask.width, mask.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, mask.pixels);
     if (gl.getError() !== gl.NO_ERROR) throw new Error('Unable to upload the text mask.');
+    // Draw before the component reveals the canvas; this also satisfies any
+    // option update that was waiting for the next frame.
     this.draw();
-    this.wake();
   }
   setOptions(options: ResinOptions) {
-    this.options = resolveResinOptions(options);
+    if (this.disposed) return;
+    const resolved = resolveResinOptions(options);
+    if ((Object.keys(resolved) as (keyof ResolvedResinOptions)[])
+      .every(key => Object.is(resolved[key], this.options[key]))) return;
+    this.options = resolved;
+    this.dirty = true;
     this.wake();
   }
   private location(name: string) {
@@ -163,29 +169,25 @@ export class TextRenderer {
     gl.uniform1f(this.location('u_puffBrightness'), normalized(o.brightness, resin.defaults.brightness));
     gl.uniform1f(this.location('u_puffSecondaryShadowStrength'), Math.max(0, Math.min(1, o.bounceStrength)));
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    this.dirty = false;
   }
-  private tick = (now: number) => {
+  private tick = () => {
     this.frame = 0;
-    if (this.disposed || !this.visible || document.hidden) { this.last = 0; return; }
-    const delta = this.last ? Math.min((now - this.last) / 1000, 0.05) : 0;
-    this.last = now;
-    const moving = !this.reduced.matches;
-    if (moving) this.elapsed += delta;
-    try { this.draw(); } catch (error) { this.fail(error as Error); return; }
-    if (moving) this.frame = requestAnimationFrame(this.tick);
-    else this.last = 0;
+    if (this.disposed || !this.visible || document.hidden || !this.dirty) return;
+    try { this.draw(); } catch (error) { this.fail(error as Error); }
   };
   private wake = () => {
     if (this.disposed) return;
     if (!this.visible || document.hidden) {
-      cancelAnimationFrame(this.frame); this.frame = 0; this.last = 0;
-    } else if (!this.frame) this.frame = requestAnimationFrame(this.tick);
+      cancelAnimationFrame(this.frame); this.frame = 0;
+    } else if (this.dirty && this.mask && !this.frame) {
+      this.frame = requestAnimationFrame(this.tick);
+    }
   };
   dispose() {
     this.disposed = true;
     cancelAnimationFrame(this.frame);
     this.observer.disconnect();
-    this.reduced.removeEventListener('change', this.wake);
     document.removeEventListener('visibilitychange', this.wake);
     this.gl.deleteTexture(this.texture);
     if (this.program) this.gl.deleteProgram(this.program);

@@ -25,6 +25,9 @@ export function TextRender(props: TextRenderProps) {
   const rendererRef = useRef<TextRenderer | null>(null);
   const refreshRef = useRef<(() => void) | null>(null);
   const [renderState, setRenderState] = useState<'pending' | 'ready' | 'fallback'>('pending');
+  const [fadeComplete, setFadeComplete] = useState(false);
+  const handoffActive = useRef(false);
+  const fadeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [reducedMotion, setReducedMotion] = useState(() =>
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const latest = useRef({ onError }); latest.current = { onError };
@@ -67,6 +70,17 @@ export function TextRender(props: TextRenderProps) {
   }, []);
 
   useEffect(() => {
+    if (renderState !== 'ready' || fadeComplete) return;
+    if (reducedMotion) { setFadeComplete(true); return; }
+    // Transition events can be absent (for example when CSS disables motion).
+    // Completing the fade also removes the transition, forcing full opacity.
+    fadeTimer.current = setTimeout(() => {
+      if (handoffActive.current) setFadeComplete(true);
+    }, 200);
+    return () => clearTimeout(fadeTimer.current);
+  }, [renderState, reducedMotion, fadeComplete]);
+
+  useEffect(() => {
     const host = hostRef.current, canvas = canvasRef.current;
     if (!host || !canvas || !plain) return;
     let disposed = false, pending = 0, revealPending = 0, signature = '', fontsReady = false, maskKey = '';
@@ -75,6 +89,9 @@ export function TextRender(props: TextRenderProps) {
     let mutation: MutationObserver | null = null;
     let fontChange: (() => void) | null = null;
     const hide = () => {
+      handoffActive.current = false;
+      clearTimeout(fadeTimer.current);
+      setFadeComplete(false);
       cancelAnimationFrame(revealPending); revealPending = 0; revealed = false;
       canvas.style.visibility = 'hidden'; canvas.style.opacity = '0'; setRenderState('pending');
     };
@@ -100,12 +117,12 @@ export function TextRender(props: TextRenderProps) {
           maskKey = nextKey;
         }
         // Keep the HTML fallback in place until the browser has had a paint
-        // opportunity with a fully drawn backing buffer. React then reveals
-        // the canvas and hides the text in the same commit.
+        // opportunity with a fully drawn backing buffer. Keep the text beneath
+        // the canvas until its fade-in is complete.
         if (!revealed && !revealPending) revealPending = requestAnimationFrame(() => {
           revealPending = 0;
           if (disposed || !hasMask || rendererRef.current?.gl.isContextLost()) return;
-          revealed = true; setRenderState('ready');
+          revealed = true; handoffActive.current = true; setRenderState('ready');
         });
       } catch (error) { fail(error as Error); }
     };
@@ -124,6 +141,7 @@ export function TextRender(props: TextRenderProps) {
     const lost = (event: Event) => { event.preventDefault(); fail(new Error('WebGL context lost; displaying HTML text.')); };
     const restored = () => { hide(); rendererRef.current?.dispose(); rendererRef.current = null; hasMask = false; init(); };
     try {
+      hide();
       const unsupported = compatibilityError();
       if (unsupported) throw unsupported;
       canvas.addEventListener('webglcontextlost', lost);
@@ -150,6 +168,8 @@ export function TextRender(props: TextRenderProps) {
       if (!document.hidden && typographySignature(host) !== signature) schedule();
     }, 400);
     return () => {
+      handoffActive.current = false;
+      clearTimeout(fadeTimer.current);
       disposed = true; cancelAnimationFrame(pending); cancelAnimationFrame(revealPending); clearInterval(interval);
       refreshRef.current = null;
       resize?.disconnect(); mutation?.disconnect();
@@ -172,12 +192,16 @@ export function TextRender(props: TextRenderProps) {
     style: {
       ...children.props.style,
       position: children.props.style?.position && children.props.style.position !== 'static' ? children.props.style.position : 'relative',
-      ...(renderState !== 'fallback' ? { color: 'transparent', WebkitTextFillColor: 'transparent' } : {}),
+      ...(renderState === 'ready' && (reducedMotion || fadeComplete) ? { color: 'transparent', WebkitTextFillColor: 'transparent' } : {}),
     },
   } as Partial<typeof children.props>, String(children.props.children),
-    <canvas key="shader-canvas" ref={canvasRef} aria-hidden="true" style={{
+    <canvas key="shader-canvas" ref={canvasRef} aria-hidden="true" onTransitionEnd={event => {
+      if (event.target === event.currentTarget && event.propertyName === 'opacity'
+        && handoffActive.current && renderState === 'ready'
+        && getComputedStyle(event.currentTarget).opacity === '1') setFadeComplete(true);
+    }} style={{
       position: 'absolute', background: 'transparent', pointerEvents: 'none', visibility: renderState === 'ready' ? 'visible' : 'hidden',
-      opacity: renderState === 'ready' ? 1 : 0, transition: reducedMotion ? 'none' : 'opacity 150ms ease', display: 'block',
+      opacity: renderState === 'ready' ? 1 : 0, transition: reducedMotion || fadeComplete ? 'none' : 'opacity 150ms ease', display: 'block',
       maxWidth: 'none', userSelect: 'none',
     }} />);
 }

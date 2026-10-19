@@ -27,6 +27,32 @@ export function Heading() {
 `TextRender` progressively enhances a plain text `h1`–`h6`, `p`, or `span`
 element. Rich children are returned as ordinary HTML and are not sent through the shader renderer.
 
+### Next.js App Router
+
+The published entry includes `"use client"`, so a Server Component can import
+and render `TextRender` directly without a client wrapper:
+
+```tsx
+// app/page.tsx
+import { TextRender } from 'textrender';
+
+export default function Page() {
+  return (
+    <TextRender puff={0.8} baseColor="#112233">
+      <h1>Shader text</h1>
+    </TextRender>
+  );
+}
+```
+
+Props passed across the server-to-client boundary must be serializable. To use
+callbacks such as `onError`, create a component with `"use client"` and define
+the callback there. The shared entry also makes `resin` and `skins` client
+exports; read their values within client code. Type-only imports remain usable
+in server code.
+
+See the [Next.js guidance for library authors](https://nextjs.org/docs/app/getting-started/server-and-client-components#third-party-components).
+
 ## API
 
 ### `TextRender`
@@ -159,3 +185,14 @@ npm run typecheck
 npm run build
 npm test
 ```
+
+Run the packed-package consumer checks against React 18 and React 19 with:
+
+```bash
+npm run test:consumer
+```
+
+Each version uses an isolated installation with matching React DOM and React
+type packages, and checks TypeScript usage, server rendering, WebGL output,
+and child refs. To check one version, use `npm run test:consumer -- --react=18`
+or `npm run test:consumer -- --react=19`.

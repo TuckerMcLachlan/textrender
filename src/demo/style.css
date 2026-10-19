@@ -80,7 +80,7 @@ button:disabled {
 }
 
 ::selection {
-    background: #c8f59d;
+    background: #363636;
     color: #172015;
     -webkit-text-fill-color: #172015
 }

@@ -63,27 +63,27 @@ export function App() {
         >
           {textRenderEnabled
             ? <TextRender {...resinProps} onError={nextError => setError(nextError.message)}>
-                <h2 data-testid="specimen" style={typeStyle} className="text-9xl font-bold leading-[0.9] tracking-tight [filter:drop-shadow(3px_4px_8px_rgba(0,0,0,0.15))]">
+                <h2 data-testid="specimen" style={typeStyle} className="text-9xl font-bold leading-[0.9] tracking-tight text-white">
                   Dimensional typography for the web
                 </h2>
               </TextRender>
-            : <h2 data-testid="specimen" style={typeStyle} className="text-9xl font-bold leading-[0.9] tracking-tight [filter:drop-shadow(3px_4px_8px_rgba(0,0,0,0.15))]">
+            : <h2 data-testid="specimen" style={typeStyle} className="text-9xl font-bold leading-[0.9] tracking-tight">
                 Dimensional typography for the web
               </h2>}
-          <div className="mt-12">
+          {/* <div className="mt-12">
             {textRenderEnabled
               ? <TextRender {...resinProps} onError={nextError => setError(nextError.message)}>
                   <h2 style={typeStyle} className="text-8xl font-semibold">Where teams and agents think together</h2>
                 </TextRender>
               : <h2 style={typeStyle} className="text-8xl font-semibold">Where teams and agents think together</h2>}
-          </div>
-          <div className="mt-12">
+          </div> */}
+          {/* <div className="mt-12">
             {textRenderEnabled
               ? <TextRender {...resinProps} onError={nextError => setError(nextError.message)}>
                   <h2 style={{ ...typeStyle, fontFamily: 'serif' }} className="text-8xl font-semibold">Where teams and agents think together</h2>
                 </TextRender>
               : <h2 style={{ ...typeStyle, fontFamily: 'serif' }} className="text-8xl font-semibold">Where teams and agents think together</h2>}
-          </div>
+          </div> */}
           {error && <p role="alert">{error}</p>}
         </section>
       </div>

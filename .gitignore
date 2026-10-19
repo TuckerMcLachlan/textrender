@@ -11,3 +11,6 @@ error-context.md
 
 # Generated package archives
 *.tgz
+
+site/
+dist/

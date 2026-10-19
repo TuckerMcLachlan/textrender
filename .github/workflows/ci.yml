@@ -37,8 +37,11 @@ jobs:
       - name: Build library
         run: npm run build
 
-      - name: Run consumer smoke test
-        run: npm run test:consumer
+      - name: Run React 18 consumer smoke test
+        run: npm run test:consumer -- --react=18
+
+      - name: Run React 19 consumer smoke test
+        run: npm run test:consumer -- --react=19
 
       - name: Run browser tests
         run: npm test
