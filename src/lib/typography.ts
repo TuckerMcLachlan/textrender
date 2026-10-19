@@ -77,7 +77,10 @@ export function createTextMask(element: HTMLElement, maxTextureSize: number): Te
   ctx.scale(ratio, ratio);
   ctx.font = `${s.fontStyle} ${s.fontWeight} ${s.fontSize} ${s.fontFamily}`;
   ctx.textBaseline = 'alphabetic'; ctx.fillStyle = '#fff'; ctx.direction = 'ltr';
-  ctx.fontKerning = s.fontKerning as CanvasFontKerning;
+  // Canvas "auto" can shape a line differently from HTML, accumulating a
+  // horizontal offset across words. Use explicit kerning for the default;
+  // preserve author-specified "normal" and "none".
+  ctx.fontKerning = s.fontKerning === 'auto' ? 'normal' : s.fontKerning as CanvasFontKerning;
   if (px(s.letterSpacing) && !('letterSpacing' in ctx)) throw new Error('Canvas letter spacing is unavailable.');
   if (px(s.wordSpacing) && !('wordSpacing' in ctx)) throw new Error('Canvas word spacing is unavailable.');
   ctx.letterSpacing = s.letterSpacing === 'normal' ? '0px' : s.letterSpacing;
