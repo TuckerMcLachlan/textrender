@@ -35,11 +35,11 @@ test('resin renders with WebGL2 across the browser project', async ({ page }) =>
     });
     const square = new ImageData(480, 100);
     for (let y = 30; y < 70; y++) for (let x = 30; x < 70; x++) square.data[(y * 480 + x) * 4 + 3] = 255;
-    // Include antialiased coverage to check zero preserves the exact glyph mask.
+    // Include antialiased coverage to check zero puff and roundness preserve the exact glyph mask.
     square.data[(50 * 480 + 29) * 4 + 3] = 90;
     const mask = { pixels: maskWithDistance(square, 1, 12), width: 480, height: 100, cssWidth: 480, cssHeight: 100, left: 0, top: 0, fontSize: 100, distanceRange: 12 };
     const render = puff => {
-      renderer.setOptions({ ...options, puff });
+      renderer.setOptions({ ...options, puff, roundness: 0 });
       renderer.setMask(mask);
       const out = new Uint8Array(pixels.length);
       gl.readPixels(0, 0, 480, 100, gl.RGBA, gl.UNSIGNED_BYTE, out);
@@ -113,7 +113,7 @@ test('resin renders with WebGL2 across the browser project', async ({ page }) =>
     };
   });
   assert.equal(lighting.webgl2, true, 'The browser project must provide WebGL2.');
-  assert.ok(lighting.exactOutline, 'Zero puff preserves original antialiased coverage exactly');
+  assert.ok(lighting.exactOutline, 'Zero puff and roundness preserve original antialiased coverage exactly');
   assert.ok(lighting.levels.every((v, i, a) => i === 0 || v > a[i - 1]), 'Coverage increases with puff');
   assert.ok(lighting.roundCorner, 'Expanded corners are round, not square');
   assert.ok(lighting.bounded, 'Expansion remains bounded');
