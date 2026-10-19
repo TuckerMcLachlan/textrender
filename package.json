@@ -36,6 +36,7 @@
     "typecheck": "tsc --noEmit",
     "test": "playwright test",
     "test:consumer": "node scripts/consumer-smoke.mjs",
+    "test:consumer:next": "node scripts/next-consumer-smoke.mjs",
     "preview": "vite preview --host 0.0.0.0"
   },
   "keywords": [

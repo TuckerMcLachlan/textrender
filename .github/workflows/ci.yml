@@ -42,3 +42,6 @@ jobs:
 
       - name: Run React 19 consumer smoke test
         run: npm run test:consumer -- --react=19
+
+      - name: Run Next.js consumer smoke test
+        run: npm run test:consumer:next

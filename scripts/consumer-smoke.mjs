@@ -119,7 +119,7 @@ async function testConsumer(reactMajor) {
     server.stdout.on('data', chunk => { serverOutput += chunk.toString(); });
     server.stderr.on('data', chunk => { serverOutput += chunk.toString(); });
 
-    browser = await chromium.launch();
+    browser = await chromium.launch(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {});
     const serverHtml = run(process.execPath, ['--input-type=module', '-e', `
       import { createElement } from 'react';
       import { renderToString } from 'react-dom/server';

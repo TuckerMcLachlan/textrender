@@ -1,8 +1,9 @@
-import { cloneElement, isValidElement, useCallback, useEffect, useRef, useState, version } from 'react';
+import { Children, cloneElement, isValidElement, useCallback, useEffect, useRef, useState, version } from 'react';
 import type { Ref } from 'react';
 import { TextRenderer } from './renderer';
+import { resin } from './skins';
 import { createTextMask, typographySignature } from './typography';
-import type { ResinOptions, TextRenderProps } from './types';
+import type { ResinOptions, TextElementProps, TextRenderProps } from './types';
 
 const finite = (n: number, fallback: number, min: number, max: number) => Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : fallback;
 
@@ -20,6 +21,10 @@ const compatibilityError = (): Error | null => {
 
 export function TextRender(props: TextRenderProps) {
   const { children, shader = 'resin', onError, ...settings } = props;
+  // Server Component transport can defer even a plain HTML child. Let React
+  // resolve its opaque children representation (and suspend when necessary).
+  const nodes = Children.toArray(children);
+  const child = nodes.length === 1 && isValidElement<TextElementProps>(nodes[0]) ? nodes[0] : null;
   const hostRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rendererRef = useRef<TextRenderer | null>(null);
@@ -32,11 +37,11 @@ export function TextRender(props: TextRenderProps) {
     typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const latest = useRef({ onError }); latest.current = { onError };
   const renderOptions: ResinOptions = {
-    puff: finite(settings.puff ?? 0.5, 0.5, 0, 1),
-    baseColor: /^#[0-9a-f]{6}$/i.test(settings.baseColor ?? '') ? settings.baseColor : '#111111',
-    shadowColor: /^#[0-9a-f]{6}$/i.test(settings.shadowColor ?? '') ? settings.shadowColor : '#000000',
-    bounceShadowColor: /^#[0-9a-f]{6}$/i.test(settings.bounceShadowColor ?? '') ? settings.bounceShadowColor : '#000000',
-    highlightColor: /^#[0-9a-f]{6}$/i.test(settings.highlightColor ?? '') ? settings.highlightColor : '#ffffff',
+    puff: finite(settings.puff ?? resin.defaults.puff, resin.defaults.puff, 0, 1),
+    baseColor: /^#[0-9a-f]{6}$/i.test(settings.baseColor ?? '') ? settings.baseColor : resin.defaults.baseColor,
+    shadowColor: /^#[0-9a-f]{6}$/i.test(settings.shadowColor ?? '') ? settings.shadowColor : resin.defaults.shadowColor,
+    bounceShadowColor: /^#[0-9a-f]{6}$/i.test(settings.bounceShadowColor ?? '') ? settings.bounceShadowColor : resin.defaults.bounceShadowColor,
+    highlightColor: /^#[0-9a-f]{6}$/i.test(settings.highlightColor ?? '') ? settings.highlightColor : resin.defaults.highlightColor,
     roundness: settings.roundness,
     depth: settings.depth,
     smoothing: settings.smoothing,
@@ -49,9 +54,9 @@ export function TextRender(props: TextRenderProps) {
     bounceStrength: settings.bounceStrength,
   };
   const optionsRef = useRef(renderOptions); optionsRef.current = renderOptions;
-  const supportedElement = isValidElement(children) && typeof children.type === 'string' && /^(h[1-6]|p|span)$/.test(children.type);
-  const plain = supportedElement && (typeof children.props.children === 'string' || typeof children.props.children === 'number');
-  const childRef = isValidElement(children) ? (Number.parseInt(version) >= 19 ? children.props.ref : (children as unknown as { ref?: Ref<HTMLElement> }).ref) : undefined;
+  const supportedElement = child !== null && typeof child.type === 'string' && /^(h[1-6]|p|span)$/.test(child.type);
+  const plain = supportedElement && (typeof child.props.children === 'string' || typeof child.props.children === 'number');
+  const childRef = child ? (Number.parseInt(version) >= 19 ? child.props.ref : (child as unknown as { ref?: Ref<HTMLElement> }).ref) : undefined;
   const refCleanup = useRef<(() => void) | void>(undefined);
   const mergedRef = useCallback((element: HTMLElement | null) => {
     hostRef.current = element;
@@ -192,23 +197,23 @@ export function TextRender(props: TextRenderProps) {
       canvas.removeEventListener('webglcontextrestored', restored);
       rendererRef.current?.dispose(); rendererRef.current = null;
     };
-  }, [plain, children.type, shader]);
+  }, [plain, child?.type, child?.key, shader]);
 
   useEffect(() => {
     rendererRef.current?.setOptions(optionsRef.current);
   });
-  useEffect(() => { refreshRef.current?.(); }, [children.props.children, children.props.className, children.props.style]);
+  useEffect(() => { refreshRef.current?.(); }, [child?.props.children, child?.props.className, child?.props.style]);
 
-  if (!supportedElement || !plain) return children;
-  return cloneElement(children, {
+  if (!child || !supportedElement || !plain) return children;
+  return cloneElement(child, {
     ref: mergedRef,
     'data-shader-state': renderState,
     style: {
-      ...children.props.style,
-      position: children.props.style?.position && children.props.style.position !== 'static' ? children.props.style.position : 'relative',
+      ...child.props.style,
+      position: child.props.style?.position && child.props.style.position !== 'static' ? child.props.style.position : 'relative',
       ...(renderState === 'ready' && (reducedMotion || fadeComplete) ? { color: 'transparent', WebkitTextFillColor: 'transparent' } : {}),
     },
-  } as Partial<typeof children.props>, String(children.props.children),
+  } as Partial<typeof child.props>, String(child.props.children),
     <canvas key="shader-canvas" ref={canvasRef} aria-hidden="true" onTransitionEnd={event => {
       if (event.target === event.currentTarget && event.propertyName === 'opacity'
         && handoffActive.current && renderState === 'ready'

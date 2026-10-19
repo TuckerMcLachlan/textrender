@@ -76,21 +76,21 @@ documented range are clamped by the renderer.
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `puff` | `number` (`0`–`1`) | `0.5` | Outline expansion and rounding intensity; maps to at most `0.035em` expansion. |
-| `baseColor` | six-digit hex string | `'#111111'` | Main material color. |
+| `puff` | `number` (`0`–`1`) | `0.29` | Outline expansion and rounding intensity; maps to at most `0.035em` expansion. |
+| `baseColor` | six-digit hex string | `'#000000'` | Main material color. |
 | `shadowColor` | six-digit hex string | `'#000000'` | Color of the darkest unlit areas. |
-| `bounceShadowColor` | six-digit hex string | `'#000000'` | Color of the opposing-light shadow. |
+| `bounceShadowColor` | six-digit hex string | `'#6e6e6e'` | Color of the opposing-light shadow. |
 | `highlightColor` | six-digit hex string | `'#ffffff'` | Glossy highlight color. |
-| `roundness` | `number` (`0`–`1`) | `0` | Rounds glyph corners and the expanded outline. |
-| `depth` | `number` (`0`–`1`) | `0.5` | Crown depth; maps to `0`–`0.2` of the font size. |
-| `smoothing` | `number` (`0`–`1`) | `0` | Normal smoothing; maps to `0.025`–`0.060`. |
-| `lightX` | `number` (`-1`–`1`) | `-0.65` | Horizontal primary-light direction. |
-| `lightY` | `number` (`-1`–`1`) | `0.85` | Vertical primary-light direction. |
-| `lightZ` | `number` (`0`–`1`) | `1` | Primary-light height; maps to `0`–`0.5`. |
-| `highlightSize` | `number` (`0`–`1`) | `18 / 35` | Highlight sharpness; maps from exponent `40` to `5`. |
-| `gloss` | `number` (`0`–`1`) | `0.16` | Base specular contribution. |
-| `brightness` | `number` (`0`–`1`) | `0.4` | Base diffuse brightness. |
-| `bounceStrength` | `number` (`0`–`1`) | `0` | Strength of the opposing-light shadow. |
+| `roundness` | `number` (`0`–`1`) | `0.26` | Rounds glyph corners and the expanded outline. |
+| `depth` | `number` (`0`–`1`) | `0.62` | Crown depth; maps to `0`–`0.2` of the font size. |
+| `smoothing` | `number` (`0`–`1`) | `0.64` | Normal smoothing; maps to `0.025`–`0.060`. |
+| `lightX` | `number` (`-1`–`1`) | `-0.67` | Horizontal primary-light direction. |
+| `lightY` | `number` (`-1`–`1`) | `0.75` | Vertical primary-light direction. |
+| `lightZ` | `number` (`0`–`1`) | `0.88` | Primary-light height; maps to `0`–`0.5`. |
+| `highlightSize` | `number` (`0`–`1`) | `0.78` | Highlight sharpness; maps from exponent `40` to `5`. |
+| `gloss` | `number` (`0`–`1`) | `0.83` | Base specular contribution. |
+| `brightness` | `number` (`0`–`1`) | `0.41` | Base diffuse brightness. |
+| `bounceStrength` | `number` (`0`–`1`) | `0.87` | Strength of the opposing-light shadow. |
 
 Example with the full Resin control surface:
 
@@ -184,6 +184,7 @@ tests. Run those checks locally with:
 npm run typecheck
 npm run build
 npm run test:consumer
+npm run test:consumer:next
 ```
 
 The separate Playwright regression suite is not currently run in CI. Run it
@@ -198,3 +199,9 @@ installation with matching React DOM and React type packages, and checks
 TypeScript usage, server rendering, WebGL output, and child refs. To check one
 version, use `npm run test:consumer -- --react=18`
 or `npm run test:consumer -- --react=19`.
+
+The Next.js consumer check uses Next 16.4 and React 19.3 in development and
+production. It covers Server Component children, Suspense, hydration, WebGL
+output, plain-text fallback, and renderer cleanup when children change.
+Set `PLAYWRIGHT_CHANNEL=chrome` to use an installed Chrome browser for either
+consumer check instead of Playwright’s bundled Chromium.
