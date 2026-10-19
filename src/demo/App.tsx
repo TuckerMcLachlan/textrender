@@ -32,7 +32,7 @@ export function App() {
   const [light, setLight] = useState(false);
   const [error, setError] = useState('');
   const typeStyle: CSSProperties = {
-    fontFamily: '"Inter", sans-serif',
+    fontFamily: 'sans-serif',
     whiteSpace: 'pre-wrap',
     overflowWrap: 'anywhere',
   };

@@ -36,7 +36,7 @@ export class TextRenderer {
   private visible = true;
   private options: ResolvedResinOptions;
   private disposed = false;
-  private observer: IntersectionObserver;
+  private observer: IntersectionObserver | null = null;
 
   constructor(private canvas: HTMLCanvasElement, private host: HTMLElement,
     options: ResinOptions, private fail: (error: Error) => void) {
@@ -46,19 +46,24 @@ export class TextRenderer {
     const texture = gl.createTexture();
     if (!texture) throw new Error('Unable to allocate a text texture.');
     this.texture = texture;
-    this.options = resolveResinOptions(options);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    document.addEventListener('visibilitychange', this.wake);
-    this.observer = new IntersectionObserver(entries => {
-      this.visible = entries[0].isIntersecting;
-      this.wake();
-    });
-    this.observer.observe(this.host);
-    this.initializeProgram();
+    try {
+      this.options = resolveResinOptions(options);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      document.addEventListener('visibilitychange', this.wake);
+      this.observer = new IntersectionObserver(entries => {
+        this.visible = entries[0].isIntersecting;
+        this.wake();
+      });
+      this.observer.observe(this.host);
+      this.initializeProgram();
+    } catch (error) {
+      this.dispose();
+      throw error;
+    }
   }
   get maxTextureSize(): number { return Math.min(8192, this.gl.getParameter(this.gl.MAX_TEXTURE_SIZE)); }
   private initializeProgram() {
@@ -185,9 +190,10 @@ export class TextRenderer {
     }
   };
   dispose() {
+    if (this.disposed) return;
     this.disposed = true;
     cancelAnimationFrame(this.frame);
-    this.observer.disconnect();
+    this.observer?.disconnect();
     document.removeEventListener('visibilitychange', this.wake);
     this.gl.deleteTexture(this.texture);
     if (this.program) this.gl.deleteProgram(this.program);

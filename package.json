@@ -1,7 +1,14 @@
 {
   "name": "textrender",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "Procedural shader materials for React typography",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TuckerMcLachlan/textrender.git"
+  },
+  "bugs": {
+    "url": "https://github.com/TuckerMcLachlan/textrender/issues"
+  },
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",

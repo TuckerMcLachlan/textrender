@@ -85,6 +85,7 @@ export function TextRender(props: TextRenderProps) {
     if (!host || !canvas || !plain) return;
     let disposed = false, pending = 0, revealPending = 0, signature = '', fontsReady = false, maskKey = '';
     let hasMask = false, revealed = false;
+    let failedMaskKey: string | undefined;
     let resize: ResizeObserver | null = null;
     let mutation: MutationObserver | null = null;
     let fontChange: (() => void) | null = null;
@@ -101,13 +102,22 @@ export function TextRender(props: TextRenderProps) {
       setRenderState('fallback');
       latest.current.onError?.(error);
     };
-    const layoutSignature = () => Array.from(host.getClientRects(), rect =>
-      `${rect.left},${rect.top},${rect.width},${rect.height}`).join(';');
+    const layoutSignature = (relative = false) => {
+      const rects = Array.from(host.getClientRects());
+      const left = relative ? rects[0]?.left ?? 0 : 0;
+      const top = relative ? rects[0]?.top ?? 0 : 0;
+      return rects.map(rect => `${rect.left - left},${rect.top - top},${rect.width},${rect.height}`).join(';');
+    };
     const rebuild = () => {
       pending = 0;
       if (disposed || !fontsReady || !rendererRef.current || rendererRef.current.gl.isContextLost()) return;
+      let attemptKey: string | undefined;
       try {
         signature = typographySignature(host);
+        // Moving the host (e.g. to display an error) does not change its typography.
+        attemptKey = signature + '|' + layoutSignature(true) + '|' + host.textContent;
+        if (attemptKey === failedMaskKey) return;
+        failedMaskKey = undefined;
         const nextKey = signature + '|' + layoutSignature() + '|' + host.textContent;
         if (nextKey !== maskKey || !hasMask) {
           const mask = createTextMask(host, rendererRef.current.maxTextureSize);
@@ -124,7 +134,11 @@ export function TextRender(props: TextRenderProps) {
           if (disposed || !hasMask || rendererRef.current?.gl.isContextLost()) return;
           revealed = true; handoffActive.current = true; setRenderState('ready');
         });
-      } catch (error) { fail(error as Error); }
+      } catch (error) {
+        failedMaskKey = attemptKey;
+        hasMask = false;
+        fail(error as Error);
+      }
     };
     const schedule = () => {
       if (disposed) return;
@@ -139,7 +153,7 @@ export function TextRender(props: TextRenderProps) {
       } catch (error) { fail(error as Error); }
     };
     const lost = (event: Event) => { event.preventDefault(); fail(new Error('WebGL context lost; displaying HTML text.')); };
-    const restored = () => { hide(); rendererRef.current?.dispose(); rendererRef.current = null; hasMask = false; init(); };
+    const restored = () => { hide(); rendererRef.current?.dispose(); rendererRef.current = null; hasMask = false; failedMaskKey = undefined; init(); };
     try {
       hide();
       const unsupported = compatibilityError();
@@ -159,7 +173,7 @@ export function TextRender(props: TextRenderProps) {
         }
         if (layoutContainer) resize.observe(layoutContainer);
       }
-      fontChange = () => { fontsReady = true; hasMask = false; schedule(); };
+      fontChange = () => { fontsReady = true; hasMask = false; failedMaskKey = undefined; schedule(); };
       document.fonts.ready.then(fontChange);
       document.fonts.addEventListener('loadingdone', fontChange);
     } catch (error) { fail(error as Error); }

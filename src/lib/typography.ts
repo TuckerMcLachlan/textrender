@@ -22,7 +22,7 @@ export function typographySignature(element: HTMLElement): string {
     s.lineHeight, s.letterSpacing, s.wordSpacing, s.textAlign, s.whiteSpace,
     s.direction, s.writingMode, s.textTransform, s.fontFeatureSettings,
     s.fontVariationSettings, s.fontVariant, s.fontKerning, s.textIndent,
-    s.textDecorationLine, s.textShadow, s.wordBreak, s.overflowWrap,
+    s.textDecorationLine, s.textShadow, s.wordBreak, s.overflowWrap, s.hyphens,
     s.width, s.height, s.padding, s.borderWidth, devicePixelRatio].join('|');
 }
 
